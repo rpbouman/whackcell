@@ -1,0 +1,242 @@
+* {
+    font-family: Arial;
+    font-size: 10pt;
+}
+body {
+    padding: 0px;
+    margin: 0px;
+}    
+
+/**
+ * Spreadsheet
+ */
+div.wxl_spreadsheet {
+    position: absolute;
+    top: bottom: 0px;
+    right: 0px;
+    bottom: 0px;
+}
+
+        
+div.wxl_spreadsheet > table {
+    border-style: solid;
+    border-width: 1px;
+    border-color: ThreeDLightShadow ThreeDDarkShadow ThreeDDarkShadow ThreeDLightShadow;
+    position: relative;
+    table-layout: fixed; 
+}
+
+table > tbody > tr > td {
+    border-style: none solid solid none;
+    border-width: 1px;
+    border-color: ThreeDFace;
+    white-space: nowrap;
+    position:relative;
+    background-color:white;
+    display: table-cell;
+}
+
+div.wxl_spreadsheet > table > tbody > tr > td > div {
+    white-space: nowrap;
+    height: 100%;
+    overflow:visible;
+    position:absolute;
+    margin-top: -10px;
+    padding: 2px;
+}
+
+div.wxl_spreadsheet > table > tbody > tr > th,
+div.wxl_spreadsheet > table > thead > tr > th {
+    font-weight: normal;
+    border-width: 1px;
+    border-style: solid !important;
+    position: relative;
+    border-color: ThreeDHighLight ThreeDDarkShadow ThreeDDarkShadow ThreeDHighLight;
+    padding: 0px;
+}
+
+div.wxl_spreadsheet > table > tbody > tr > th, 
+div.wxl_spreadsheet > table > tbody > tr > td,
+div.wxl_spreadsheet > table > thead > tr > th, 
+div.wxl_spreadsheet > table > thead > tr > td {
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+div.wxl_spreadsheet > table > thead > tr > th > div.wxl_header,
+div.wxl_spreadsheet > table > tbody > tr > th > div.wxl_header {
+    cursor: pointer;
+    border-color: ThreeDFace ThreeDShadow ThreeDShadow ThreeDFace;
+    border-width: 1px;
+    border-style: solid;
+    background-color: ThreeDFace;
+    overflow: hidden;
+}
+
+div.wxl_spreadsheet > table > thead > tr > th > div.wxl_column_header {
+    width:50px;
+    text-align: center;    
+    height: 16px;
+    position: relative;
+}
+
+div.wxl_spreadsheet > table > tbody > tr > th > div.wxl_row_header {
+    height:100%;
+    text-align: right;
+    padding-right: 2px;
+    position:relative;
+    height: 18px;
+}
+
+div.wxl_spreadsheet > table > thead > tr > th > div.wxl_header > div.wxl_resize,
+div.wxl_spreadsheet > table > tbody > tr > th > div.wxl_header > div.wxl_resize {
+    background-color: transparent;
+}
+
+div.wxl_spreadsheet > table > thead > tr > th > div.wxl_column_header > div.wxl_resize_horizontal {
+    height: 100%;
+    width: 3px;
+    top: 0px !important;
+    bottom: 0px;    
+    cursor: ew-resize;
+    right: 0px;
+    position: absolute;
+}
+
+div.wxl_spreadsheet > table > tbody > tr > th > div.wxl_header > div.wxl_resize_vertical {
+    height: 3px;
+    width: 100%;
+    cursor: ns-resize;
+    position:absolute;
+    bottom: 0px;
+}
+
+div.wxl_spreadsheet > table > tbody > tr > td.wxl_selected {
+    background-color: rgb(225,225,255);
+}
+
+div.wxl_spreadsheet > table > thead > tr > th.wxl_active > div,
+div.wxl_spreadsheet > table > tbody > tr > th.wxl_active > div {
+    background-color: ThreeDHighLight;
+}
+
+div.wxl_spreadsheet > table > tbody > tr > td.wxl_active {
+    border-style: solid;
+    border-width: 2px;
+    border-color: ThreeDShadow;
+}
+
+div.wxl_spreadsheet > div.wxl_resizer {
+    position: absolute;
+    background-color: black;
+    z-index: 1000;
+}
+
+div.wxl_spreadsheet > div.wxl_resizer_horizontal {
+    width: 1px;
+    height: 100%;
+    top: 0px;
+    bottom: 0px;
+    cursor: e-resize;
+}
+
+div.wxl_spreadsheet > div.wxl_resizer_vertical {
+    height: 1px;
+    width: 100%;
+    left: 0px;
+    right: 0px;
+    cursor: n-resize;
+}
+
+div.wxl_spreadsheet > div.wxl_mover {
+    position: absolute;
+    background-color: ThreeDHighLight;
+    opacity: 0.3;
+    z-index: 1000;
+    border-width:1px;
+    border-color: black;
+}
+
+div.wxl_spreadsheet > div.wxl_row_mover {
+    left:0px;
+    right:0px;
+    border-style: solid none solid none;
+    cursor: ns-resize;
+}
+
+div.wxl_spreadsheet > div.wxl_column_mover {
+    top:0px;
+    bottom:0px;
+    border-style: none solid none solid;
+    cursor: ew-resize;
+}
+
+div.wxl_spreadsheet > div.wxl_row_drop {
+    height: 2px;
+    width: 100%;
+    left: 0px;
+    right: 0px;
+    position: absolute;
+    background-color: black;
+    z-index: 1000;
+}
+
+div.wxl_spreadsheet > div.wxl_column_drop {
+    width: 2px;
+    height: 100%;
+    top: 0px;
+    bottom: 0px;
+    position: absolute;
+    background-color: black;
+    z-index: 1000;
+}
+/**
+ * Toolbar
+ */
+div.wxl_toolbar {
+    background-color: ThreeDFace;
+    border-width: 1px;
+    border-style:solid;
+    border-color: ThreeDHighLight ThreeDDarkShadow ThreeDDarkShadow ThreeDHighLight;
+}
+
+div.wxl_toolbar > div {
+    border-width: 1px;
+    border-style:solid;
+    border-color: ThreeDFace ThreeDShadow ThreeDShadow ThreeDFace;
+    height:26px;
+    position: relative;
+}
+
+/**
+ * Celleditor
+ */
+ 
+textarea.wxl_celleditor {
+    height: 16px;
+    border-style:solid;
+    border-width:1px;
+    border-color: black;
+    top:2px;
+    bottom:0px;
+    position:absolute;
+    right: 0px;
+    left: 10em;
+    width:80%;
+}
+
+textarea.wxl_active {
+}
+
+input.wxl_cellnavigator {
+    height: 16px;
+    border-style:solid;
+    border-width:1px;
+    border-color: black;
+    top:2px;
+    bottom:0px;
+    position:absolute;
+    left: 0px;
+}

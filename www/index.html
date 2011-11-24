@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+        <title>Spreadsheet</title>
+        <link rel="stylesheet" type="text/css" href="css/whackcell.css" />
+    </head>
+    <body>
+        <div id="wxl_toolbar" class="wxl_toolbar">
+            <div>
+                
+            </div>
+        </div>
+
+        <div class="wxl_toolbar">
+            <div>
+                <input id="wxl_cellnavigator" />
+                <textarea id="wxl_celleditor"></textarea>
+            </div>
+        </div>
+
+        <div style="left: 0px; top: 60px" id="spreadsheet" />
+        
+        <script type="text/javascript" src="js/whackcell.js"></script>
+        <script type="text/javascript">
+            var spreadSheet = new wxl.SpreadSheet({
+                id: "spreadsheet",
+                numDisplayRows: 5,
+                numDisplayCols: 5,
+                lastCol: 10,
+                lastRow: 10,
+                cellEditor: {
+                    id: "wxl_celleditor",
+                    inline: true
+                },
+                cellNavigator: {
+                    id: "wxl_cellnavigator"
+                }
+            });
+            var cellEditor = new wxl.CellEditor({
+                id: "wxl_celleditor",
+                spreadSheet: spreadSheet
+            });
+            var cellNavigator = new wxl.CellNavigator({
+                id: "wxl_cellnavigator",
+                spreadSheet: spreadSheet
+            });
+        </script>
+    </body>
+</html>
