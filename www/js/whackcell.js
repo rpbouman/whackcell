@@ -1,6 +1,8 @@
 (function(){
 
 var doc = document,
+    body = doc.body,
+    head = doc.getElementsByTagName("head").item(0),
     win = window
 ;
 
@@ -32,6 +34,10 @@ function isFunc(val){
 
 function isArr(val){
     return val.constructor===Array;
+}
+
+function isEl(el) {
+    return isObj(el) && el.nodeType===1;
 }
 
 function forPinO(o, f, scope){
@@ -84,7 +90,7 @@ function el(id) {
         e = doc.getElementById(id);
     }
     else 
-    if (isObj(id) && id.nodeType) {
+    if (isEl(id)) {
         e = id;
     }
     return e;
@@ -679,7 +685,7 @@ wxl.StyleSheet.prototype = {
         me.style = _crEl("STYLE", {
             type: "text/css",
             id: config.id
-        }, null, tag("head"));
+        }, null, head);
         if (config.rules) {
             me.addRules(config.rules);
         }
@@ -852,31 +858,25 @@ wxl.Range.prototype = {
         }
     },
     allRows: function(){
-        if (this.start.row!==1) {
-            return false;
-        }
-        return this.end.row === this.config.spreadsheet.numRows;
+        return  this.start.row===1 &&
+                this.end.row === this.config.spreadsheet.numRows
+        ;
     },
     allCols: function(){
-        if (this.start.col!==1) {
-            return false;
-        }
-        return this.end.col === this.config.spreadsheet.numCols;
+        return  this.start.col===1 &&
+                this.end.col === this.config.spreadsheet.numCols
+        ;
     }
 };
 
 /***************************************************************
 *   
-*   SpreadSheet
+*   DataGrid
 *
 ***************************************************************/
-win["wxl"]["SpreadSheet"] = function(config){
+win["wxl"]["DataGrid"] = function(config){
     var me = this;
     me.config = config = merge(config, {
-        numDisplayRows: 50,
-        numDisplayCols: 50,
-        lastRow: 50,
-        lastCol: 50,
         firstDisplayCol: 1,
         firstDisplayRow: 1
     });
@@ -891,7 +891,7 @@ win["wxl"]["SpreadSheet"] = function(config){
     me.render();
 };
 
-wxl.SpreadSheet.getColumnHeaderName = function(num){
+wxl.DataGrid.getColumnHeaderName = function(num){
     var r,h="";
     do {
         r = num % 26;
@@ -901,7 +901,7 @@ wxl.SpreadSheet.getColumnHeaderName = function(num){
     return h;
 };
 
-wxl.SpreadSheet.getColumnIndex = function(address) {
+wxl.DataGrid.getColumnIndex = function(address) {
     var i, n = address.length-1, col = 0;
     for (i=n; i >= 0; i--) {
         col += (address.charCodeAt(i) - 64);
@@ -909,25 +909,26 @@ wxl.SpreadSheet.getColumnIndex = function(address) {
     return col;
 }
 
-wxl.SpreadSheet.getCellName = function(td){
-    return  wxl.SpreadSheet.getColumnHeaderName(td.cellIndex-1) + 
+wxl.DataGrid.getCellName = function(td){
+    return  wxl.DataGrid.getColumnHeaderName(td.cellIndex-1) + 
             td.parentNode.rowIndex
     ;
 }
 
-wxl.SpreadSheet.prototype = {
+wxl.DataGrid.prototype = {
     render: function(){
         var me = this,
+            config = me.config,
             table = "", row = "", thead = "", tbody = "",
-            firstDisplayCol = me.config.firstDisplayCol,
-            firstDisplayRow = me.config.firstDisplayRow,
+            firstDisplayCol = config.firstDisplayCol,
+            firstDisplayRow = config.firstDisplayRow,
             lastDisplayCol = firstDisplayCol + me.config.numDisplayCols -1,
             lastDisplayRow = firstDisplayRow + me.config.numDisplayRows -1,
-            id = me.config.id,
+            container = (this.container = el(config.div)),
+            id = container.id,
             stylePrefix1 = "\n#" + id + " > TABLE > * > TR",
             stylePrefix2 = "",
             styles = {},
-            container = (me.container = el(id)),
             className,
             i, n
         ;
@@ -938,7 +939,7 @@ wxl.SpreadSheet.prototype = {
             thead += "<th class=\"" + className + "\" scope=\"col\">";
             thead += 
                 "<div class=\"wxl_header wxl_column_header\">" + 
-                    (i ? "<span>" + wxl.SpreadSheet.getColumnHeaderName(i-1) + "</span>" + 
+                    (i ? "<span>" + wxl.DataGrid.getColumnHeaderName(i-1) + "</span>" + 
                          "<div class=\"wxl_resize wxl_resize_horizontal\"></div>": ""
                     ) + 
                 "</div>"
@@ -1301,7 +1302,7 @@ wxl.SpreadSheet.prototype = {
     },
     getColumnHeader: function(col){
         if (/[A-Z]+/.test(col)) {
-            col = wxl.SpreadSheet.getColumnIndex(col);
+            col = wxl.DataGrid.getColumnIndex(col);
         }
         return this.table.rows.item(0).cells.item(col);
     },
@@ -1394,7 +1395,7 @@ wxl.SpreadSheet.prototype = {
             numDisplayRows = config.numDisplayRows,
             firstDisplayRow = config.firstDisplayRow,
             lastDisplayRow = firstDisplayRow + numDisplayRows - 1,
-            id = config.id,
+            id = this.container.id,
             stylePrefix1 = "#" + id + " > TABLE > * > TR"
         ;
         if (cellIndex < firstDisplayCol) {
@@ -1630,7 +1631,7 @@ wxl.SpreadSheet.prototype = {
     }
 };
 
-merge(wxl.SpreadSheet.prototype, Observable.prototype);
+merge(wxl.DataGrid.prototype, Observable.prototype);
 /***************************************************************
 *   
 *   Resizer
@@ -1653,14 +1654,13 @@ win["wxl"]["CellNavigator"] = function(config) {
 
 wxl.CellNavigator.prototype = {
     init: function(){
-        var spreadSheet = this.config.spreadSheet;
-        spreadSheet.listen("cellactivated", this.cellActivated, this);
+        var dataGrid = this.config.dataGrid;
+        dataGrid.listen("cellactivated", this.cellActivated, this);
         this.render();
     },
     render: function() {
         var me = this,
-            id = this.config.id,
-            input = el(id)
+            input = el(me.config.input)
         ;
         input.size = 8;
         input.className = "wxl_cellnavigator";
@@ -1669,7 +1669,7 @@ wxl.CellNavigator.prototype = {
         this.input = input;
     },
     cellActivated: function(spreadSheet, event, cell){
-        this.input.value = wxl.SpreadSheet.getCellName(cell);
+        this.input.value = wxl.DataGrid.getCellName(cell);
     },
     changeHandler: function() {
     },
@@ -1693,15 +1693,14 @@ window["wxl"]["CellEditor"] = function(config) {
 
 wxl.CellEditor.prototype = {
     init: function(){
-        var spreadSheet = this.config.spreadSheet;
-        spreadSheet.listen("cellactivated", this.cellActivated, this);
-        spreadSheet.listen("startediting", this.startEditing, this);
+        var dataGrid = this.config.dataGrid;
+        dataGrid.listen("cellactivated", this.cellActivated, this);
+        dataGrid.listen("startediting", this.startEditing, this);
         this.render();
     },
     render: function() {
         var me = this,
-            id = me.config.id,
-            textarea = el(id)
+            textarea = el(me.config.textarea)
         ;
         me.editing = false;
         textarea.className = "wxl_celleditor";
@@ -1806,4 +1805,65 @@ wxl.CellEditor.prototype = {
     }
 };
 
+/***************************************************************
+*   
+*   Application
+*
+***************************************************************/
+win["wxl"]["SpreadSheet"] = function(config) {
+    this.config = merge(config, {
+        id: body,
+        numDisplayRows: 50,
+        numDisplayCols: 50,
+        lastRow: 50,
+        lastCol: 50,
+    });
+    this.render();
+};
+
+wxl.SpreadSheet.prototype = {
+    render: function() {
+        var config = this.config,
+            container = el(config.id),
+            cellNavigator = "wxl_navigator", 
+            cellEditor = "wxl_editor", 
+            dataGrid = "wxl_datagrid"
+        ;
+        _chs(container, [
+            _crEl(
+                "DIV", {
+                "class": "wxl_toolbar",
+            }, _crEl("DIV")),
+            _crEl("DIV", {
+                "class": "wxl_toolbar",
+            }, _crEl("DIV", null, [
+                _crEl("INPUT", {
+                    id: cellNavigator
+                }),
+                _crEl("TEXTAREA", {
+                    id: cellEditor
+                }),
+            ])),
+            _crEl("DIV", {
+                id: dataGrid,
+                style: {
+                    top: "60px",
+                    left: "0px"
+                }
+            })
+        ]);
+        dataGrid = new wxl.DataGrid(merge({
+            div: dataGrid
+        }, this.config));
+        cellEditor = new wxl.CellEditor({
+            dataGrid: dataGrid,
+            textarea: cellEditor
+        });
+        cellNavigator = new wxl.CellNavigator({
+            dataGrid: dataGrid,
+            input: cellNavigator
+        });
+    }
+};
+ 
 })();
