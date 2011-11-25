@@ -1003,10 +1003,6 @@ wxl.DataGrid.prototype = {
         listen(me.table, "click", this.clickHandler, me);
         return kbHandler;
     },
-    initListeners: function() {
-        listen(this.table, "click", this.clickHandler, this);
-        listen(doc, "keydown", this.keydownHandler, this);
-    },
     initDnD: function() {
         this.ddHandler = new DDHandler({
             node: this.container
@@ -1461,9 +1457,6 @@ wxl.DataGrid.prototype = {
     clearCellValue: function(cell) {
         tag("DIV", cell).innerHTML = "";
     },
-    startEditing: function(cell) {
-        this.fireEvent("startediting", cell);
-    },
     clickHandler: function(e) {
         var target = e.getTarget(), 
             className = target.className,
@@ -1517,54 +1510,6 @@ wxl.DataGrid.prototype = {
 */
                 break;
         }
-    },
-    keydownHandler: function(kbHandler, type, e) {
-        var keyCode = e.getKeyCode(),
-            shiftKey = e.getShiftKey()
-        ;
-        switch (keyCode) {
-            case 9:     //tab
-                e.preventDefault();
-            case 13:    //newline
-            case 33:    //page up
-            case 34:    //page down
-            case 35:    //end
-            case 36:    //home
-            case 37:    //left
-            case 38:    //up
-            case 39:    //right
-            case 40:    //down
-                this.moveToCell(keyCode, shiftKey);
-                break;
-            case 46:
-                if (this.activeCell){
-                    this.setCellValue(this.activeCell, ""); 
-                }
-                break;
-            case 8:     //backspace
-            case 16:    //shift
-            case 17:    //ctrl
-            case 18:    //alt
-            case 27:    //esc
-            case 112:   //F1
-            case 113:   //F2
-            case 114:   //F3
-            case 115:   //F4
-            case 116:   //F5
-            case 117:   //F6
-            case 118:   //F7
-            case 119:   //F8
-            case 120:   //F9
-            case 121:   //F10
-            case 122:   //F11
-            case 123:   //F12
-                break;
-            default:
-                if (this.activeCell) {
-                    this.startEditing(this.activeCell);
-                }
-        }
-        return false;
     },
     setDisplayDimensions: function(numRows, numCols){
     }
