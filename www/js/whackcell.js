@@ -885,9 +885,6 @@ win["wxl"]["DataGrid"] = function(config){
     me.firstDisplayCol = config.firstDisplayCol ? config.firstDisplayCol : 1;
     me.firstDisplayRow = config.firstDisplayRow ? config.firstDisplayRow : 1;
     me.selection = [];
-    me.stylesheet = new wxl.StyleSheet({
-        id: config.id + "-style"
-    });
     me.render();
 };
 
@@ -983,12 +980,18 @@ wxl.DataGrid.prototype = {
             "</table>"
         ;
         me.table = tag("table", container);
-        me.stylesheet.render();
-        me.stylesheet.addRules(styles);
-        me.initDnD();
+        me.initStyleSheet(styles);
         me.initResizing();
         me.initMoving();
         return;
+    },
+    initStyleSheet: function(styles) {
+        var me = this;
+        me.stylesheet = new wxl.StyleSheet({
+            id: me.config.id + "-style"
+        });
+        me.stylesheet.render();
+        me.stylesheet.addRules(styles || {});
     },
     getKBHandler: function() {
         var me = this,
@@ -1003,14 +1006,20 @@ wxl.DataGrid.prototype = {
         listen(me.table, "click", this.clickHandler, me);
         return kbHandler;
     },
-    initDnD: function() {
-        this.ddHandler = new DDHandler({
-            node: this.container
-        });
+    getDDHandler: function() {
+        var me = this,
+            ddHandler = this.ddHandler
+        ;
+        if (!ddHandler) {
+            ddHandler = this.ddHandler = new DDHandler({
+                node: this.container
+            });
+        }
+        return ddHandler;
     },
     initResizing: function() {
         var table = this.table;
-        this.ddHandler.listen({
+        this.getDDHandler().listen({
             scope: this,
             startDrag: function(event, ddHandler){
                 var target = event.getTarget();
@@ -1088,75 +1097,11 @@ wxl.DataGrid.prototype = {
             }
         });
     },
-    moveRow: function(sourceIndex, targetIndex) {
-        if (targetIndex===sourceIndex) return;
-
-        var table = this.table,
-            rows = table.rows, 
-            sourceRow = rows.item(sourceIndex), sourceCell,
-            sourceCells = sourceRow.cells,
-            n = sourceCells.length, i, 
-            targetRow, targetCell,
-            activeCell = this.activeCell
-        ;
-        if (activeCell && activeCell.parentNode.rowIndex === sourceIndex) {
-            activeCell = activeCell.cellIndex;
-            this.setActiveCell(null);
-        }
-        targetRow = table.insertRow(targetIndex);
-        targetRow.className = "r" + targetIndex;
-        targetRow.appendChild(_crEl("th", {
-            "class": "th",
-            scope: "row"
-        }, tag("DIV", sourceCells.item(0))));
-        tag("SPAN", targetRow.cells.item(0)).innerHTML = targetIndex;
-        for (i = 1; i<n; i++) {
-            sourceCell = sourceCells.item(i);
-            targetCell = targetRow.insertCell(i);
-            targetCell.className = sourceCell.className;
-            targetCell.appendChild(tag("DIV", sourceCell));
-        }
-        this.table.deleteRow(sourceRow.rowIndex);
-        for (i = sourceIndex; i !== targetIndex; i += (sourceIndex < targetIndex ? 1 : -1)) {
-            row = rows.item(i);
-            row.className = "r" + i;
-            tag("SPAN", row.cells.item(0)).innerHTML = i;
-        }
-        if (activeCell) {
-            this.setActiveCell(targetRow.cells.item(activeCell));
-        }
-    },
-    moveColumn: function(sourceIndex, targetIndex) {
-        if (targetIndex===sourceIndex) return;
-        var table = this.table,
-            rows = table.rows,
-            i, n = rows.length, row,
-            sourceCell, targetCell,
-            activeCell = this.activeCell
-        ;
-        if (activeCell && activeCell.cellIndex === sourceIndex) {
-            activeCell = activeCell.parentNode.rowIndex;
-            this.setActiveCell(null);
-        }
-        else {
-            activeCell = null;
-        }
-        for (var i = 1; i < n; i++){
-            row = rows.item(i);
-            sourceCell = row.cells(sourceIndex);
-            targetCell = row.insertCell(targetIndex);
-            targetCell.appendChild(tag("DIV", sourceCell));
-            row.deleteCell(sourceCell.cellIndex);
-        }
-        if (activeCell) {
-            this.setActiveCell(rows.item(activeCell).cells.item(targetIndex));
-        }
-    },
     initMoving: function() {
         var container = this.container,
             table = this.table
         ;
-        this.ddHandler.listen({
+        this.getDDHandler().listen({
             scope: this,
             startDrag: function(event, ddHandler){
                 var target = event.getTarget();
@@ -1447,14 +1392,13 @@ wxl.DataGrid.prototype = {
     getRows: function() {
         return this.table.rows;
     },
-    getCellValue: function(cell) {
+    getCellText: function(cell) {
         return txt(tag("DIV", cell));
     },
-    setCellValue: function(cell, value) {
-        value = escXML(value);
-        tag("DIV", cell).innerHTML = value;
+    setCellText: function(cell, text) {
+        tag("DIV", cell).innerHTML = escXML(text);
     },
-    clearCellValue: function(cell) {
+    clearCell: function(cell) {
         tag("DIV", cell).innerHTML = "";
     },
     clickHandler: function(e) {
@@ -1522,6 +1466,87 @@ merge(wxl.DataGrid.prototype, Observable.prototype);
 *   CellEditor
 *
 ***************************************************************/
+window["wxl"]["Movable"] = function(config) {
+    this.config = config;
+    this.init();
+};
+
+wxl.Movable.prototype = {
+    init: function(){ 
+        var dataGrid = this.config.dataGrid;
+        dataGrid.moveRow = this.moveRow;
+        dataGrid.moveColumn = this.moveColumn;
+    },
+    moveRow: function(sourceIndex, targetIndex) {
+        if (targetIndex===sourceIndex) return;
+
+        var table = this.table,
+            rows = table.rows, 
+            sourceRow = rows.item(sourceIndex), sourceCell,
+            sourceCells = sourceRow.cells,
+            n = sourceCells.length, i, 
+            targetRow, targetCell,
+            activeCell = this.activeCell
+        ;
+        if (activeCell && activeCell.parentNode.rowIndex === sourceIndex) {
+            activeCell = activeCell.cellIndex;
+            this.setActiveCell(null);
+        }
+        targetRow = table.insertRow(targetIndex);
+        targetRow.className = "r" + targetIndex;
+        targetRow.appendChild(_crEl("th", {
+            "class": "th",
+            scope: "row"
+        }, tag("DIV", sourceCells.item(0))));
+        tag("SPAN", targetRow.cells.item(0)).innerHTML = targetIndex;
+        for (i = 1; i<n; i++) {
+            sourceCell = sourceCells.item(i);
+            targetCell = targetRow.insertCell(i);
+            targetCell.className = sourceCell.className;
+            targetCell.appendChild(tag("DIV", sourceCell));
+        }
+        this.table.deleteRow(sourceRow.rowIndex);
+        for (i = sourceIndex; i !== targetIndex; i += (sourceIndex < targetIndex ? 1 : -1)) {
+            row = rows.item(i);
+            row.className = "r" + i;
+            tag("SPAN", row.cells.item(0)).innerHTML = i;
+        }
+        if (activeCell) {
+            this.setActiveCell(targetRow.cells.item(activeCell));
+        }
+    },
+    moveColumn: function(sourceIndex, targetIndex) {
+        if (targetIndex===sourceIndex) return;
+        var table = this.table,
+            rows = table.rows,
+            i, n = rows.length, row,
+            sourceCell, targetCell,
+            activeCell = this.activeCell
+        ;
+        if (activeCell && activeCell.cellIndex === sourceIndex) {
+            activeCell = activeCell.parentNode.rowIndex;
+            this.setActiveCell(null);
+        }
+        else {
+            activeCell = null;
+        }
+        for (var i = 1; i < n; i++){
+            row = rows.item(i);
+            sourceCell = row.cells(sourceIndex);
+            targetCell = row.insertCell(targetIndex);
+            targetCell.appendChild(tag("DIV", sourceCell));
+            row.deleteCell(sourceCell.cellIndex);
+        }
+        if (activeCell) {
+            this.setActiveCell(rows.item(activeCell).cells.item(targetIndex));
+        }
+    }
+};
+/***************************************************************
+*   
+*   CellEditor
+*
+***************************************************************/
 window["wxl"]["CellEditor"] = function(config) {
     this.config = config = merge(config, {
     });    
@@ -1556,7 +1581,7 @@ wxl.CellEditor.prototype = {
         this.textarea.disabled = !enabled;
     },
     cellActivated: function(dataGrid, event, cell){
-        this.textarea.value = dataGrid.getCellValue(cell);
+        this.textarea.value = dataGrid.getCellText(cell);
     },
     isEditing: function() {
         return this.editing;
@@ -1615,7 +1640,7 @@ wxl.CellEditor.prototype = {
             cell = dataGrid.activeCell
         if (cell) {
             if (keyCode === 46) {
-                dataGrid.clearCellValue(cell);
+                dataGrid.clearCell(cell);
             }
             else {
                 this.startEditing(dataGrid, event, cell);
@@ -1668,7 +1693,7 @@ wxl.CellEditor.prototype = {
             default:
                 var cell = this.cell;
                 if (cell) {
-                    this.config.dataGrid.setCellValue(cell, this.textarea.value);
+                    this.config.dataGrid.setCellText(cell, this.textarea.value);
                 }
         }
         return false;
@@ -1686,22 +1711,23 @@ wxl.CellEditor.prototype = {
 };
 /***************************************************************
 *   
-*   KeyboardNavigator
+*   KeyboardNavigable
 *
 ***************************************************************/
-win["wxl"]["KeyboardNavigator"] = function(config) {
+win["wxl"]["KeyboardNavigable"] = function(config) {
     this.config = config;
     this.init();
 };
 
-wxl.KeyboardNavigator.prototype = {
+wxl.KeyboardNavigable.prototype = {
     init: function() {
         var me = this,
             dataGrid = me.config.dataGrid;
-        dataGrid.getKBHandler().listen("keydown", me.moveToCell, me);
+        dataGrid.moveToCell = this.moveToCell;
+        dataGrid.getKBHandler().listen("keydown", dataGrid.moveToCell, dataGrid);
     },
     moveToCell: function(kbHandler, type, event){
-        var dataGrid = this.config.dataGrid,
+        var dataGrid = this,
             cell = dataGrid.activeCell
         ;
         if (!cell) return;
@@ -1860,16 +1886,25 @@ wxl.SpreadSheet.prototype = {
         dataGrid = new wxl.DataGrid(merge({
             div: dataGrid
         }, this.config));
+        
+        //allow grid to be navigated using the keyboard
+        keyboardNavigable = new wxl.KeyboardNavigable({
+            dataGrid: dataGrid
+        });
+        //allow columns and rows to be moved around
+        movable  = new wxl.Movable({
+            dataGrid: dataGrid
+        });
+        
+        //add a celleditor
         cellEditor = new wxl.CellEditor({
             dataGrid: dataGrid,
             textarea: cellEditor
         });
+        //add a widget to show the cell address 
         cellNavigator = new wxl.CellNavigator({
             dataGrid: dataGrid,
             input: cellNavigator
-        });
-        keyboardNavigator = new wxl.KeyboardNavigator({
-            dataGrid: dataGrid
         });
     }
 };
