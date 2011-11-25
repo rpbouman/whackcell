@@ -301,7 +301,7 @@ function merge(dst, src, mode){
     var p,v;
     mode = parseInt(mode, 10);
     mode = mode ? mode : 0;
-    if (isUnd(dst)) {
+    if (!isObj(dst)) {
         dst = {};
     }
     forPinO(src, function(p, o){
@@ -982,7 +982,6 @@ wxl.DataGrid.prototype = {
         me.table = tag("table", container);
         me.initStyleSheet(styles);
         me.initResizing();
-        me.initMoving();
         return;
     },
     initStyleSheet: function(styles) {
@@ -1092,152 +1091,6 @@ wxl.DataGrid.prototype = {
                         break;
                     case "wxl_resizer_horizontal":
                         dragProxy.style.left = (startDragEvent.left + (xy.x - startXY.x)) + "px";
-                        break;
-                }
-            }
-        });
-    },
-    initMoving: function() {
-        var container = this.container,
-            table = this.table
-        ;
-        this.getDDHandler().listen({
-            scope: this,
-            startDrag: function(event, ddHandler){
-                var target = event.getTarget();
-                if (target.tagName==="DIV" && hasClass(target, "wxl_header")) {
-                    var dragProxy = ddHandler.dragProxy,
-                        dragProxyStyle = dragProxy.style,
-                        dropProxy = ddHandler.dropProxy,
-                        dropProxyStyle = dropProxy.style,
-                        parent = target.parentNode, 
-                        pos = position(parent), 
-                        tabPos = position(table), cls,
-                        startDragEvent = ddHandler.startDragEvent,
-                        offset, size
-                    ;
-                    pos.x = pos.left - tabPos.left;
-                    pos.y = pos.top - tabPos.top;                    
-                    dragProxy.className = "";
-                    if (hasClass(target, "wxl_row_header")) {
-                        offset = (pos.x + parent.clientWidth) + "px";
-                        size = (table.clientWidth - parent.clientWidth) + "px";
-                        
-                        dragProxyStyle.width = size;
-                        dragProxyStyle.left = offset;
-                        dragProxyStyle.height = parent.clientHeight + "px";
-                        dragProxyStyle.top =  (startDragEvent.top = pos.y) + "px";
-
-                        cls = "wxl_row_mover";
-                        dropProxyStyle.width = size;
-                        dropProxyStyle.left = offset;
-                        dropProxy.className = "wxl_row_drop";
-                        dropProxyStyle.height = "3px";
-                    }
-                    else
-                    if (hasClass(target, "wxl_column_header")) {
-                        offset = (pos.y + parent.clientHeight) + "px";
-                        size = (table.clientHeight - parent.clientHeight) + "px";
-                        
-                        dragProxyStyle.height = size;
-                        dragProxyStyle.top = offset;
-                        dragProxyStyle.width = parent.clientWidth + "px";
-                        dragProxyStyle.left =  (startDragEvent.left = pos.x) + "px";
-                        
-                        cls = "wxl_column_mover";
-                        dropProxyStyle.height = size;
-                        dropProxyStyle.top = offset;
-                        dropProxy.className = "wxl_column_drop";
-                        dropProxyStyle.width = "3px";
-                    }
-                    startDragEvent.cls = cls;
-                    addClasses(dragProxy, ["wxl_mover", cls]);
-                    return true;
-                }
-                return false;
-            },
-            endDrag: function(event, ddHandler){
-                var dragProxy = ddHandler.dragProxy,
-                    dragProxyStyle = dragProxy.style,
-                    dropProxy = ddHandler.dropProxy,
-                    dropProxyStyle = dropProxy.style,
-                    startEvent = ddHandler.startDragEvent,
-                    startTarget = startEvent.target,
-                    targetPos,
-                    target = event.getTarget(),
-                    targetParent = target.parentNode,
-                    targetIndex,
-                    xy = event.getXY()
-                ;
-                switch(startEvent.cls){
-                    case "wxl_row_mover":
-                        if (target.tagName === "DIV" && hasClass(target, "wxl_row_header")) {
-                            sourceIndex = startTarget.parentNode.parentNode.rowIndex;
-                            targetIndex = targetParent.parentNode.rowIndex;
-                            targetPos = position(targetParent);
-                            if ((xy.y - targetPos.top) >= (targetParent.clientHeight/2)) {
-                                targetIndex++;
-                            }
-                            this.moveRow(sourceIndex, targetIndex);
-                        }
-                        break;
-                    case "wxl_column_mover":
-                        if (target.tagName === "DIV" && hasClass(target, "wxl_column_header")) {
-                            sourceIndex = startTarget.parentNode.cellIndex;
-                            targetIndex = targetParent.cellIndex;
-                            targetPos = position(targetParent);
-                            if ((xy.x - targetPos.left) >= (targetParent.clientWidth/2)) {
-                                targetIndex++;
-                            }
-                            this.moveColumn(sourceIndex, targetIndex);
-                        }
-                        break;
-                }
-                dragProxy.className = "";
-                dropProxyStyle.display = "none";
-                this.kbHandler.focus();
-            },
-            whileDrag: function(event, ddHandler){
-                var dragProxy = ddHandler.dragProxy,
-                    dragProxyStyle = dragProxy.style,
-                    dropProxy = ddHandler.dropProxy,
-                    dropProxyStyle = dropProxy.style,
-                    tabPos, targetPos,
-                    startEvent = ddHandler.startDragEvent,
-                    startTarget = startEvent.target,
-                    startXY = startEvent.getXY(),
-                    xy = event.getXY(),
-                    target = event.getTarget(),
-                    targetParent = target.parentNode
-                ;
-                switch(startEvent.cls){
-                    case "wxl_row_mover":
-                        dragProxyStyle.top = (startEvent.top + (xy.y - startXY.y)) + "px";
-                        if (target.tagName === "DIV" && hasClass(target, "wxl_row_header")) {
-                            targetPos = position(targetParent);
-                            tabPos = position(table);
-                            dropProxyStyle.display = "";
-                            dropProxyStyle.top = (targetPos.top - tabPos.top) +
-                                (((xy.y - targetPos.top) < (targetParent.clientHeight/2)) ? 0 : targetParent.clientHeight) + "px"
-                            ;
-                        }
-                        else {
-                            dropProxyStyle.display = "none";
-                        }
-                        break;
-                    case "wxl_column_mover":
-                        dragProxyStyle.left = (startEvent.left + (xy.x - startXY.x)) + "px";
-                        if (target.tagName === "DIV" && hasClass(target, "wxl_column_header")) {
-                            targetPos = position(targetParent);
-                            tabPos = position(table);
-                            dropProxyStyle.display = "";
-                            dropProxyStyle.left = (targetPos.left - tabPos.left) +
-                                (((xy.x - targetPos.left) < (targetParent.clientWidth/2)) ? 0 : targetParent.clientWidth) + "px"
-                            ;
-                        }
-                        else {
-                            dropProxyStyle.display = "none";
-                        }
                         break;
                 }
             }
@@ -1473,9 +1326,18 @@ window["wxl"]["Movable"] = function(config) {
 
 wxl.Movable.prototype = {
     init: function(){ 
-        var dataGrid = this.config.dataGrid;
+        var config = this.config,
+            dataGrid = config.dataGrid;
         dataGrid.moveRow = this.moveRow;
         dataGrid.moveColumn = this.moveColumn;
+        if (config = config.ddsupport) {
+            config = merge(config, {
+                dataGrid: dataGrid,
+                rows: true,
+                columns: true
+            })
+            new wxl.MovableDDSupport(config);
+        }
     },
     moveRow: function(sourceIndex, targetIndex) {
         if (targetIndex===sourceIndex) return;
@@ -1542,6 +1404,166 @@ wxl.Movable.prototype = {
         }
     }
 };
+
+window["wxl"]["MovableDDSupport"] = function(config) {
+    this.config = config;
+    this.init();
+};
+
+wxl.MovableDDSupport.prototype = {
+   init: function() {
+        var config = this.config,
+            dataGrid = config.dataGrid,
+            container = dataGrid.container,
+            table = dataGrid.table
+        ;
+        dataGrid.getDDHandler().listen({
+            scope: this,
+            startDrag: function(event, ddHandler){
+                var target = event.getTarget();
+                if (target.tagName==="DIV" && hasClass(target, "wxl_header")) {
+                    var dragProxy = ddHandler.dragProxy,
+                        dragProxyStyle = dragProxy.style,
+                        dropProxy = ddHandler.dropProxy,
+                        dropProxyStyle = dropProxy.style,
+                        parent = target.parentNode, 
+                        pos = position(parent), 
+                        tabPos = position(table), cls,
+                        startDragEvent = ddHandler.startDragEvent,
+                        offset, size
+                    ;
+                    pos.x = pos.left - tabPos.left;
+                    pos.y = pos.top - tabPos.top;                    
+                    dragProxy.className = "";
+                    if (hasClass(target, "wxl_row_header")) {
+                        if (config.rows === false) return false;
+
+                        offset = (pos.x + parent.clientWidth) + "px";
+                        size = (table.clientWidth - parent.clientWidth) + "px";
+                        
+                        dragProxyStyle.width = size;
+                        dragProxyStyle.left = offset;
+                        dragProxyStyle.height = parent.clientHeight + "px";
+                        dragProxyStyle.top =  (startDragEvent.top = pos.y) + "px";
+
+                        cls = "wxl_row_mover";
+                        dropProxyStyle.width = size;
+                        dropProxyStyle.left = offset;
+                        dropProxy.className = "wxl_row_drop";
+                        dropProxyStyle.height = "3px";
+                    }
+                    else
+                    if (hasClass(target, "wxl_column_header")) {
+                        if (config.columns === false) return false;
+
+                        offset = (pos.y + parent.clientHeight) + "px";
+                        size = (table.clientHeight - parent.clientHeight) + "px";
+                        
+                        dragProxyStyle.height = size;
+                        dragProxyStyle.top = offset;
+                        dragProxyStyle.width = parent.clientWidth + "px";
+                        dragProxyStyle.left =  (startDragEvent.left = pos.x) + "px";
+                        
+                        cls = "wxl_column_mover";
+                        dropProxyStyle.height = size;
+                        dropProxyStyle.top = offset;
+                        dropProxy.className = "wxl_column_drop";
+                        dropProxyStyle.width = "3px";
+                    }
+                    startDragEvent.cls = cls;
+                    addClasses(dragProxy, ["wxl_mover", cls]);
+                    return true;
+                }
+                return false;
+            },
+            endDrag: function(event, ddHandler){
+                var dragProxy = ddHandler.dragProxy,
+                    dragProxyStyle = dragProxy.style,
+                    dropProxy = ddHandler.dropProxy,
+                    dropProxyStyle = dropProxy.style,
+                    startEvent = ddHandler.startDragEvent,
+                    startTarget = startEvent.target,
+                    targetPos,
+                    target = event.getTarget(),
+                    targetParent = target.parentNode,
+                    targetIndex,
+                    xy = event.getXY()
+                ;
+                switch(startEvent.cls){
+                    case "wxl_row_mover":
+                        if (target.tagName === "DIV" && hasClass(target, "wxl_row_header")) {
+                            sourceIndex = startTarget.parentNode.parentNode.rowIndex;
+                            targetIndex = targetParent.parentNode.rowIndex;
+                            targetPos = position(targetParent);
+                            if ((xy.y - targetPos.top) >= (targetParent.clientHeight/2)) {
+                                targetIndex++;
+                            }
+                            dataGrid.moveRow(sourceIndex, targetIndex);
+                        }
+                        break;
+                    case "wxl_column_mover":
+                        if (target.tagName === "DIV" && hasClass(target, "wxl_column_header")) {
+                            sourceIndex = startTarget.parentNode.cellIndex;
+                            targetIndex = targetParent.cellIndex;
+                            targetPos = position(targetParent);
+                            if ((xy.x - targetPos.left) >= (targetParent.clientWidth/2)) {
+                                targetIndex++;
+                            }
+                            dataGrid.moveColumn(sourceIndex, targetIndex);
+                        }
+                        break;
+                }
+                dragProxy.className = "";
+                dropProxyStyle.display = "none";
+                dataGrid.getKBHandler().focus();
+            },
+            whileDrag: function(event, ddHandler){
+                var dragProxy = ddHandler.dragProxy,
+                    dragProxyStyle = dragProxy.style,
+                    dropProxy = ddHandler.dropProxy,
+                    dropProxyStyle = dropProxy.style,
+                    tabPos, targetPos,
+                    startEvent = ddHandler.startDragEvent,
+                    startTarget = startEvent.target,
+                    startXY = startEvent.getXY(),
+                    xy = event.getXY(),
+                    target = event.getTarget(),
+                    targetParent = target.parentNode
+                ;
+                switch(startEvent.cls){
+                    case "wxl_row_mover":
+                        dragProxyStyle.top = (startEvent.top + (xy.y - startXY.y)) + "px";
+                        if (target.tagName === "DIV" && hasClass(target, "wxl_row_header")) {
+                            targetPos = position(targetParent);
+                            tabPos = position(table);
+                            dropProxyStyle.display = "";
+                            dropProxyStyle.top = (targetPos.top - tabPos.top) +
+                                (((xy.y - targetPos.top) < (targetParent.clientHeight/2)) ? 0 : targetParent.clientHeight) + "px"
+                            ;
+                        }
+                        else {
+                            dropProxyStyle.display = "none";
+                        }
+                        break;
+                    case "wxl_column_mover":
+                        dragProxyStyle.left = (startEvent.left + (xy.x - startXY.x)) + "px";
+                        if (target.tagName === "DIV" && hasClass(target, "wxl_column_header")) {
+                            targetPos = position(targetParent);
+                            tabPos = position(table);
+                            dropProxyStyle.display = "";
+                            dropProxyStyle.left = (targetPos.left - tabPos.left) +
+                                (((xy.x - targetPos.left) < (targetParent.clientWidth/2)) ? 0 : targetParent.clientWidth) + "px"
+                            ;
+                        }
+                        else {
+                            dropProxyStyle.display = "none";
+                        }
+                        break;
+                }
+            }
+        });
+    }
+ };
 /***************************************************************
 *   
 *   CellEditor
@@ -1893,7 +1915,10 @@ wxl.SpreadSheet.prototype = {
         });
         //allow columns and rows to be moved around
         movable  = new wxl.Movable({
-            dataGrid: dataGrid
+            dataGrid: dataGrid,
+            ddsupport: {
+                rows: false
+            }
         });
         
         //add a celleditor
