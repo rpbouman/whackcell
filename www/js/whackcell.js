@@ -985,21 +985,23 @@ wxl.DataGrid.prototype = {
         me.table = tag("table", container);
         me.stylesheet.render();
         me.stylesheet.addRules(styles);
-        me.initKB();
         me.initDnD();
         me.initResizing();
         me.initMoving();
         return;
     },
-    initKB: function() {
+    getKBHandler: function() {
         var me = this,
-            kbHandler = new KBHandler({
+            kbHandler = this.kbHandler
+        ;
+        if (!kbHandler) {
+            kbHandler = this.kbHandler = new KBHandler({
                 container: me.container
             });
-        kbHandler.render();    
+            kbHandler.render();    
+        }
         listen(me.table, "click", this.clickHandler, me);
-        kbHandler.listen("keydown", me.keydownHandler, me);
-        me.kbHandler = kbHandler;
+        return kbHandler;
     },
     initListeners: function() {
         listen(this.table, "click", this.clickHandler, this);
@@ -1446,72 +1448,6 @@ wxl.DataGrid.prototype = {
             });
         }
     },
-    moveToCell: function(dir, shiftKey){
-        if (!this.activeCell) {
-            return;
-        }
-        var cell = this.activeCell,
-            cellIndex = cell.cellIndex,
-            row = cell.parentNode,
-            rowIndex = row.rowIndex,
-            rows = row.parentNode.parentNode.rows
-        ;
-        switch (dir) {
-            case 9:    //right
-                if (shiftKey) {
-                    if (--cellIndex === 0){
-                        cellIndex = row.cells.length-1;
-                        rowIndex--;
-                    }
-                }
-                else {
-                    if (++cellIndex === row.cells.length){
-                        cellIndex = 1;
-                        rowIndex++;
-                    }
-                }
-                break;
-            case 13:    //right                
-                rowIndex += shiftKey ? -1 : 1;
-                break;
-            case 33:    //page up
-                rowIndex = rowIndex - (rowIndex > this.config.numDisplayRows ? this.config.numDisplayRows : rowIndex) + 1;
-                break;
-            case 34:    //page down
-                rowIndex = rowIndex + (this.numRows - rowIndex > this.config.numDisplayRows ? this.config.numDisplayRows : this.numRows - rowIndex) - 1;
-                break;
-            case 35:    //end
-                cellIndex = row.cells.length-1;
-                break;
-            case 36:    //home
-                cellIndex = 1;
-                break;
-            case 37:    //left
-                cellIndex--;
-                break;
-            case 39:    //right
-                cellIndex++;
-                break;
-            case 38:    //up                
-                rowIndex--;
-                break;
-            case 40:    //down
-                rowIndex++;
-                break;
-        }
-        if (!cellIndex || !rowIndex) {
-            return;
-        }
-        row = rows.item(rowIndex);
-        if (!row) {
-            return;
-        }
-        cell = row.cells.item(cellIndex);
-        if (!cell){
-            return;
-        }
-        this.setActiveCell(cell);
-    },
     getRows: function() {
         return this.table.rows;
     },
@@ -1520,7 +1456,10 @@ wxl.DataGrid.prototype = {
     },
     setCellValue: function(cell, value) {
         value = escXML(value);
-        return tag("DIV", cell).innerHTML = value;
+        tag("DIV", cell).innerHTML = value;
+    },
+    clearCellValue: function(cell) {
+        tag("DIV", cell).innerHTML = "";
     },
     startEditing: function(cell) {
         this.fireEvent("startediting", cell);
@@ -1632,13 +1571,261 @@ wxl.DataGrid.prototype = {
 };
 
 merge(wxl.DataGrid.prototype, Observable.prototype);
+
 /***************************************************************
 *   
-*   Resizer
+*   CellEditor
 *
 ***************************************************************/
-win["wxl"]["Resizer"] = function() {
-}
+window["wxl"]["CellEditor"] = function(config) {
+    this.config = config = merge(config, {
+    });    
+    this.dataGrid = null;
+    this.cell = null;
+    this.init();
+};
+
+wxl.CellEditor.prototype = {
+    init: function(){
+        var dataGrid = this.config.dataGrid;
+        dataGrid.listen("cellactivated", this.cellActivated, this);
+        dataGrid.getKBHandler().listen("keydown", this.dataGridKeyDownHandler, this);
+        this.render();
+    },
+    render: function() {
+        var me = this,
+            textarea = el(me.config.textarea)
+        ;
+        me.editing = false;
+        textarea.className = "wxl_celleditor";
+        listen(textarea, "keydown", me.keydownHandler, me);
+        listen(textarea, "keyup", me.keyupHandler, me);
+        listen(textarea, "focus", me.focusHandler, me);
+        listen(textarea, "click", me.clickHandler, me);
+        me.textarea = textarea;
+    },
+    focus: function(){
+        this.textarea.focus();
+    },
+    setEnabled: function(enabled) {
+        this.textarea.disabled = !enabled;
+    },
+    cellActivated: function(dataGrid, event, cell){
+        this.textarea.value = dataGrid.getCellValue(cell);
+    },
+    isEditing: function() {
+        return this.editing;
+    },
+    startEditing: function(dataGrid, event, cell) {
+        addClass(this.textarea, "wxl_active");
+        this.textarea.select();
+        this.cell = cell;
+        this.editing = true;
+        if (event !== "focus" ) {
+            this.focus();
+        }
+    },
+    stopEditing: function() {
+        removeClass(this.textarea, "wxl_active");
+        this.editing = false;
+        var dataGrid = this.config.dataGrid;
+        if (dataGrid) {
+            this.textarea.blur();
+            dataGrid.focus();
+        }
+    },
+    dataGridKeyDownHandler: function(kbHandler, type, event){
+        var keyCode = event.getKeyCode();
+        switch (keyCode) {
+            case 9:     //tab
+            case 13:    //newline
+            case 33:    //page up
+            case 34:    //page down
+            case 35:    //end
+            case 36:    //home
+            case 37:    //left
+            case 38:    //up
+            case 39:    //right
+            case 40:    //down
+            case 8:     //backspace
+            case 16:    //shift
+            case 17:    //ctrl
+            case 18:    //alt
+            case 27:    //esc
+            case 112:   //F1
+            case 113:   //F2
+            case 114:   //F3
+            case 115:   //F4
+            case 116:   //F5
+            case 117:   //F6
+            case 118:   //F7
+            case 119:   //F8
+            case 120:   //F9
+            case 121:   //F10
+            case 122:   //F11
+            case 123:   //F12
+                return;
+        }
+        var dataGrid = this.config.dataGrid,
+            cell = dataGrid.activeCell
+        if (cell) {
+            if (keyCode === 46) {
+                dataGrid.clearCellValue(cell);
+            }
+            else {
+                this.startEditing(dataGrid, event, cell);
+            }
+            return false;
+        }
+    },
+    keydownHandler: function(e) {
+        var keyCode = e.getKeyCode();
+        switch (keyCode) {
+            case 9:     //tab
+            case 13:    //newline
+                e.preventDefault();
+            case 33:    //page up
+            case 34:    //page down
+            case 35:    //end
+            case 36:    //home
+            case 37:    //left
+            case 38:    //up
+            case 39:    //right
+            case 40:    //down
+                var dataGrid = this.config.dataGrid;
+                if ((keyCode===9 || keyCode===13) && dataGrid) {
+                    if (this.isEditing()) {
+                        this.stopEditing();
+                        var kbHandler = dataGrid.getKBHandler();
+                        kbHandler.focus();
+                        kbHandler.fireEvent("keydown", e);
+                    }
+                }
+                break;
+        }
+        return false;
+    },
+    keyupHandler: function(e) {
+        var keyCode = e.getKeyCode();
+        switch (keyCode) {
+            case 9:     //tab
+            case 13:    //newline
+            case 33:    //page up
+            case 34:    //page down
+            case 35:    //end
+            case 36:    //home
+            case 37:    //left
+            case 38:    //up
+            case 39:    //right
+            case 40:    //down
+                e.preventDefault();
+                break;
+            default:
+                var cell = this.cell;
+                if (cell) {
+                    this.config.dataGrid.setCellValue(cell, this.textarea.value);
+                }
+        }
+        return false;
+    },
+    focusHandler: function(e) {
+        if (this.spreadSheet && this.cell) {
+            this.startEditing(this.spreadSheet, "focus", this.cell);
+        }
+    },
+    clickHandler: function(e) {
+        if (this.spreadSheet && this.cell) {
+            this.focus();
+        }
+    }
+};
+/***************************************************************
+*   
+*   KeyboardNavigator
+*
+***************************************************************/
+win["wxl"]["KeyboardNavigator"] = function(config) {
+    this.config = config;
+    this.init();
+};
+
+wxl.KeyboardNavigator.prototype = {
+    init: function() {
+        var me = this,
+            dataGrid = me.config.dataGrid;
+        dataGrid.getKBHandler().listen("keydown", me.moveToCell, me);
+    },
+    moveToCell: function(kbHandler, type, event){
+        var dataGrid = this.config.dataGrid,
+            cell = dataGrid.activeCell
+        ;
+        if (!cell) return;
+        var cellIndex = cell.cellIndex,
+            row = cell.parentNode,
+            rowIndex = row.rowIndex,
+            rows = row.parentNode.parentNode.rows
+        ;
+        switch (event.getKeyCode()) {
+            case 9:    //right
+                event.preventDefault(); 
+                if (event.getShiftKey()) {
+                    if (--cellIndex === 0){
+                        cellIndex = row.cells.length-1;
+                        rowIndex--;
+                    }
+                }
+                else {
+                    if (++cellIndex === row.cells.length){
+                        cellIndex = 1;
+                        rowIndex++;
+                    }
+                }
+                break;
+            case 13:    //right                
+                rowIndex += event.getShiftKey() ? -1 : 1;
+                break;
+            case 33:    //page up
+                rowIndex = rowIndex - (rowIndex > dataGrid.config.numDisplayRows ? dataGrid.config.numDisplayRows : rowIndex) + 1;
+                break;
+            case 34:    //page down
+                rowIndex = rowIndex + (dataGrid.numRows - rowIndex > dataGrid.config.numDisplayRows ? dataGrid.config.numDisplayRows : dataGrid.numRows - rowIndex) - 1;
+                break;
+            case 35:    //end
+                cellIndex = row.cells.length-1;
+                break;
+            case 36:    //home
+                cellIndex = 1;
+                break;
+            case 37:    //left
+                cellIndex--;
+                break;
+            case 39:    //right
+                cellIndex++;
+                break;
+            case 38:    //up                
+                rowIndex--;
+                break;
+            case 40:    //down
+                rowIndex++;
+                break;
+            default:
+                return;
+        }
+        if (!cellIndex || !rowIndex) {
+            return;
+        }
+        row = rows.item(rowIndex);
+        if (!row) {
+            return;
+        }
+        cell = row.cells.item(cellIndex);
+        if (!cell){
+            return;
+        }
+        dataGrid.setActiveCell(cell);
+        return false;
+    },
+};
 
 /***************************************************************
 *   
@@ -1677,133 +1864,6 @@ wxl.CellNavigator.prototype = {
         this.input.select();
     }
 }
-
-/***************************************************************
-*   
-*   CellEditor
-*
-***************************************************************/
-window["wxl"]["CellEditor"] = function(config) {
-    this.config = config = merge(config, {
-    });    
-    this.spreadSheet = null;
-    this.cell = null;
-    this.init();
-};
-
-wxl.CellEditor.prototype = {
-    init: function(){
-        var dataGrid = this.config.dataGrid;
-        dataGrid.listen("cellactivated", this.cellActivated, this);
-        dataGrid.listen("startediting", this.startEditing, this);
-        this.render();
-    },
-    render: function() {
-        var me = this,
-            textarea = el(me.config.textarea)
-        ;
-        me.editing = false;
-        textarea.className = "wxl_celleditor";
-        listen(textarea, "keydown", me.keydownHandler, me);
-        listen(textarea, "keyup", me.keyupHandler, me);
-        listen(textarea, "focus", me.focusHandler, me);
-        listen(textarea, "click", me.clickHandler, me);
-        me.textarea = textarea;
-    },
-    focus: function(){
-        this.textarea.focus();
-    },
-    setEnabled: function(enabled) {
-        this.textarea.disabled = !enabled;
-    },
-    cellActivated: function(spreadSheet, event, cell){
-        this.spreadSheet = spreadSheet;
-        this.cell = cell;
-        this.textarea.value = spreadSheet.getCellValue(cell);
-    },
-    isEditing: function() {
-        return this.editing;
-    },
-    startEditing: function(spreadSheet, event, cell) {
-        addClass(this.textarea, "wxl_active");
-        this.textarea.select();
-        this.spreadSheet = spreadSheet;
-        this.cell = cell;
-        this.editing = true;
-        if (event !== "focus" ) {
-            this.focus();
-        }
-    },
-    stopEditing: function() {
-        removeClass(this.textarea, "wxl_active");
-        this.editing = false;
-        if (this.spreadSheet) {
-            this.textarea.blur();
-            this.spreadSheet.focus();
-        }
-    },
-    keydownHandler: function(e) {
-        var keyCode = e.getKeyCode(),
-            shiftKey = e.getShiftKey()
-        ;
-        switch (keyCode) {
-            case 9:     //tab
-            case 13:    //newline
-                e.preventDefault();
-            case 33:    //page up
-            case 34:    //page down
-            case 35:    //end
-            case 36:    //home
-            case 37:    //left
-            case 38:    //up
-            case 39:    //right
-            case 40:    //down
-                if ((keyCode===9 || keyCode===13) && this.spreadSheet) {
-                    if (this.isEditing()) {
-                        this.stopEditing();
-                        this.spreadSheet.kbHandler.focus();
-                        this.spreadSheet.kbHandler.fireEvent("keydown", e);
-                    }
-                }
-                break;
-        }
-        return false;
-    },
-    keyupHandler: function(e) {
-        var keyCode = e.getKeyCode(),
-            shiftKey = e.getShiftKey()
-        ;
-        switch (keyCode) {
-            case 9:     //tab
-            case 13:    //newline
-            case 33:    //page up
-            case 34:    //page down
-            case 35:    //end
-            case 36:    //home
-            case 37:    //left
-            case 38:    //up
-            case 39:    //right
-            case 40:    //down
-                e.preventDefault();
-                break;
-            default:
-                if (this.spreadSheet && this.cell) {
-                    this.spreadSheet.setCellValue(this.cell, this.textarea.value);
-                }
-        }
-        return false;
-    },
-    focusHandler: function(e) {
-        if (this.spreadSheet && this.cell) {
-            this.startEditing(this.spreadSheet, "focus", this.cell);
-        }
-    },
-    clickHandler: function(e) {
-        if (this.spreadSheet && this.cell) {
-            this.focus();
-        }
-    }
-};
 
 /***************************************************************
 *   
@@ -1862,6 +1922,9 @@ wxl.SpreadSheet.prototype = {
         cellNavigator = new wxl.CellNavigator({
             dataGrid: dataGrid,
             input: cellNavigator
+        });
+        keyboardNavigator = new wxl.KeyboardNavigator({
+            dataGrid: dataGrid
         });
     }
 };
