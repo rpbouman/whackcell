@@ -907,7 +907,7 @@ win["wxl"] = {};
             className,
             i, n
         ;
-        addClass(container, "wxl_spreadsheet")
+        addClass(container, "wxl_datagrid")
         stylePrefix2 = stylePrefix1 + " > ."
         for (i=0, n = me.numCols; i <= n; i++) {
             className = "c" + i;
@@ -952,7 +952,7 @@ win["wxl"] = {};
             }
         }
         container.innerHTML = 
-            "<table cellspacing=\"0\" cellpadding=\"0\" class=\"wxl_spreadsheet\" id=\"wxl_" + id + "\">" +
+            "<table cellspacing=\"0\" cellpadding=\"0\" class=\"wxl_datagrid\" id=\"wxl_" + id + "\">" +
                 "<thead><tr class=\"r0\">" + thead + "</tr></thead>" +
                 "<tbody>" + tbody + "</tbody>" +
             "</table>"

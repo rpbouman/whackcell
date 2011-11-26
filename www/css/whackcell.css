@@ -10,7 +10,7 @@ body {
 /**
  * Spreadsheet
  */
-div.wxl_spreadsheet {
+div.wxl_datagrid {
     position: absolute;
     top: 0px;
     bottom: 0px;
@@ -19,7 +19,7 @@ div.wxl_spreadsheet {
 }
 
         
-div.wxl_spreadsheet > table {
+div.wxl_datagrid > table {
     border-style: solid;
     border-width: 1px;
     border-color: ThreeDLightShadow ThreeDDarkShadow ThreeDDarkShadow ThreeDLightShadow;
@@ -37,7 +37,7 @@ table > tbody > tr > td {
     display: table-cell;
 }
 
-div.wxl_spreadsheet > table > tbody > tr > td > div {
+div.wxl_datagrid > table > tbody > tr > td > div {
     white-space: nowrap;
     height: 100%;
     overflow:visible;
@@ -46,8 +46,8 @@ div.wxl_spreadsheet > table > tbody > tr > td > div {
     padding: 2px;
 }
 
-div.wxl_spreadsheet > table > tbody > tr > th,
-div.wxl_spreadsheet > table > thead > tr > th {
+div.wxl_datagrid > table > tbody > tr > th,
+div.wxl_datagrid > table > thead > tr > th {
     font-weight: normal;
     border-width: 1px;
     border-style: solid !important;
@@ -56,18 +56,18 @@ div.wxl_spreadsheet > table > thead > tr > th {
     padding: 0px;
 }
 
-div.wxl_spreadsheet > table > tbody > tr > th, 
-div.wxl_spreadsheet > table > tbody > tr > td,
-div.wxl_spreadsheet > table > thead > tr > th, 
-div.wxl_spreadsheet > table > thead > tr > td {
+div.wxl_datagrid > table > tbody > tr > th, 
+div.wxl_datagrid > table > tbody > tr > td,
+div.wxl_datagrid > table > thead > tr > th, 
+div.wxl_datagrid > table > thead > tr > td {
   -moz-user-select: none;
   -khtml-user-select: none;
   -webkit-user-select: none;
   user-select: none;
 }
 
-div.wxl_spreadsheet > table > thead > tr > th > div.wxl_header,
-div.wxl_spreadsheet > table > tbody > tr > th > div.wxl_header {
+div.wxl_datagrid > table > thead > tr > th > div.wxl_header,
+div.wxl_datagrid > table > tbody > tr > th > div.wxl_header {
     cursor: pointer;
     border-color: ThreeDFace ThreeDShadow ThreeDShadow ThreeDFace;
     border-width: 1px;
@@ -76,14 +76,14 @@ div.wxl_spreadsheet > table > tbody > tr > th > div.wxl_header {
     overflow: hidden;
 }
 
-div.wxl_spreadsheet > table > thead > tr > th > div.wxl_column_header {
+div.wxl_datagrid > table > thead > tr > th > div.wxl_column_header {
     width:50px;
     text-align: center;    
     height: 16px;
     position: relative;
 }
 
-div.wxl_spreadsheet > table > tbody > tr > th > div.wxl_row_header {
+div.wxl_datagrid > table > tbody > tr > th > div.wxl_row_header {
     height:100%;
     text-align: right;
     padding-right: 2px;
@@ -91,12 +91,12 @@ div.wxl_spreadsheet > table > tbody > tr > th > div.wxl_row_header {
     height: 18px;
 }
 
-div.wxl_spreadsheet > table > thead > tr > th > div.wxl_header > div.wxl_resize,
-div.wxl_spreadsheet > table > tbody > tr > th > div.wxl_header > div.wxl_resize {
+div.wxl_datagrid > table > thead > tr > th > div.wxl_header > div.wxl_resize,
+div.wxl_datagrid > table > tbody > tr > th > div.wxl_header > div.wxl_resize {
     background-color: transparent;
 }
 
-div.wxl_spreadsheet > table > thead > tr > th > div.wxl_column_header > div.wxl_resize_horizontal {
+div.wxl_datagrid > table > thead > tr > th > div.wxl_column_header > div.wxl_resize_horizontal {
     height: 100%;
     width: 3px;
     top: 0px !important;
@@ -106,7 +106,7 @@ div.wxl_spreadsheet > table > thead > tr > th > div.wxl_column_header > div.wxl_
     position: absolute;
 }
 
-div.wxl_spreadsheet > table > tbody > tr > th > div.wxl_header > div.wxl_resize_vertical {
+div.wxl_datagrid > table > tbody > tr > th > div.wxl_header > div.wxl_resize_vertical {
     height: 3px;
     width: 100%;
     cursor: ns-resize;
@@ -114,28 +114,28 @@ div.wxl_spreadsheet > table > tbody > tr > th > div.wxl_header > div.wxl_resize_
     bottom: 0px;
 }
 
-div.wxl_spreadsheet > table > tbody > tr > td.wxl_selected {
+div.wxl_datagrid > table > tbody > tr > td.wxl_selected {
     background-color: rgb(225,225,255);
 }
 
-div.wxl_spreadsheet > table > thead > tr > th.wxl_active > div,
-div.wxl_spreadsheet > table > tbody > tr > th.wxl_active > div {
+div.wxl_datagrid > table > thead > tr > th.wxl_active > div,
+div.wxl_datagrid > table > tbody > tr > th.wxl_active > div {
     background-color: ThreeDHighLight;
 }
 
-div.wxl_spreadsheet > table > tbody > tr > td.wxl_active {
+div.wxl_datagrid > table > tbody > tr > td.wxl_active {
     border-style: solid;
     border-width: 2px;
     border-color: ThreeDShadow;
 }
 
-div.wxl_spreadsheet > div.wxl_resizer {
+div.wxl_datagrid > div.wxl_resizer {
     position: absolute;
     background-color: black;
     z-index: 1000;
 }
 
-div.wxl_spreadsheet > div.wxl_resizer_horizontal {
+div.wxl_datagrid > div.wxl_resizer_horizontal {
     width: 1px;
     height: 100%;
     top: 0px;
@@ -143,7 +143,7 @@ div.wxl_spreadsheet > div.wxl_resizer_horizontal {
     cursor: e-resize;
 }
 
-div.wxl_spreadsheet > div.wxl_resizer_vertical {
+div.wxl_datagrid > div.wxl_resizer_vertical {
     height: 1px;
     width: 100%;
     left: 0px;
@@ -151,7 +151,7 @@ div.wxl_spreadsheet > div.wxl_resizer_vertical {
     cursor: n-resize;
 }
 
-div.wxl_spreadsheet > div.wxl_mover {
+div.wxl_datagrid > div.wxl_mover {
     position: absolute;
     background-color: ThreeDHighLight;
     opacity: 0.3;
@@ -160,21 +160,21 @@ div.wxl_spreadsheet > div.wxl_mover {
     border-color: black;
 }
 
-div.wxl_spreadsheet > div.wxl_row_mover {
+div.wxl_datagrid > div.wxl_row_mover {
     left:0px;
     right:0px;
     border-style: solid none solid none;
     cursor: ns-resize;
 }
 
-div.wxl_spreadsheet > div.wxl_column_mover {
+div.wxl_datagrid > div.wxl_column_mover {
     top:0px;
     bottom:0px;
     border-style: none solid none solid;
     cursor: ew-resize;
 }
 
-div.wxl_spreadsheet > div.wxl_row_drop {
+div.wxl_datagrid > div.wxl_row_drop {
     height: 2px;
     width: 100%;
     left: 0px;
@@ -184,7 +184,7 @@ div.wxl_spreadsheet > div.wxl_row_drop {
     z-index: 1000;
 }
 
-div.wxl_spreadsheet > div.wxl_column_drop {
+div.wxl_datagrid > div.wxl_column_drop {
     width: 2px;
     height: 100%;
     top: 0px;
