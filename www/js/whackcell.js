@@ -329,15 +329,14 @@ function merge(dst, src, mode){
 *   Event
 *
 ***************************************************************/
-var Event = function(e) {
+var Event;
+(Event = function(e) {
     if (!e) {
         e = win.event;
     }
     this.browserEvent = e;
     return this;
-}
-
-Event.prototype = {    
+}).prototype = {    
     getTarget: function(){ 
         var browserEvent = this.browserEvent;
         if (browserEvent.target) {
@@ -400,10 +399,8 @@ Event.prototype = {
     }
 };
 
-Event.Saved = function() {
-};
-
-Event.Saved.prototype = {
+(Event.Saved = function() {
+}).prototype = {
     destroy: function(){
         for (var p in this) {
             if (this.hasOwnProperty(p)){
@@ -453,10 +450,9 @@ function listen(node, type, listener, scope) {
 *   Observable
 *
 ***************************************************************/
-var Observable = function() {
-};
-
-Observable.prototype = {
+var Observable;
+(Observable = function() {
+}).prototype = {
     listen: function(type, method, scope) {
         var listeners, handlers;
         if (!(listeners = this.listeners)) {
@@ -495,7 +491,8 @@ Observable.prototype = {
 *   DDHandler
 *
 ***************************************************************/
-var DDHandler = function (config) {
+var DDHandler;
+(DDHandler = function (config) {
     config = merge(config, {
         node: doc.body
     });
@@ -539,9 +536,7 @@ var DDHandler = function (config) {
         me.event = e;
         me.handleMouseMove(e);
     }, this);    
-};
-
-DDHandler.prototype = {
+}).prototype = {
     listen: function(listener){
         if (!listener.scope) {
             listener.scope = win;
@@ -622,11 +617,10 @@ DDHandler.prototype = {
     }
 };
 
-var KBHandler = function (config) {
+var KBHandler;
+(KBHandler = function (config) {
     this.config = config;
-}; 
-
-KBHandler.prototype = {
+}).prototype = {
     render: function() {
         var me = this,
             config = me.config,
@@ -672,7 +666,7 @@ win["wxl"] = {};
 *   Stylesheet
 *
 ***************************************************************/
-win["wxl"]["StyleSheet"] = function(config){
+(win["wxl"]["StyleSheet"] = function(config){
     this.config = config = merge(config, {
         enabled: true,
         rules: {}
@@ -683,9 +677,7 @@ win["wxl"]["StyleSheet"] = function(config){
             //todo: load the rules
         }
     }
-};
-
-wxl.StyleSheet.prototype = {
+}).prototype = {
     render: function(){
         var me = this, 
             config = me.config
@@ -837,11 +829,9 @@ wxl.StyleSheet.prototype = {
 *   Range
 *
 ***************************************************************/
-win["wxl"]["Range"] = function(config){
+(win["wxl"]["Range"] = function(config){
     this.config = config;
-};
-
-wxl.Range.prototype = {
+}).prototype = {
     each: function(callback, scope) {
         var config = this.config,
             start = config.start,
@@ -882,7 +872,7 @@ wxl.Range.prototype = {
 *   DataGrid
 *
 ***************************************************************/
-win["wxl"]["DataGrid"] = function(config){
+(win["wxl"]["DataGrid"] = function(config){
     var me = this;
     me.config = config = merge(config, {
         firstDisplayCol: 1,
@@ -900,43 +890,7 @@ win["wxl"]["DataGrid"] = function(config){
         this.ddHandler = config.ddHandler;
     }
     me.render();
-};
-
-wxl.DataGrid.getColumnHeaderName = function(num){
-    var r,h="";
-    do {
-        r = num % 26;
-        num = (num - r) / 26;
-        h = String.fromCharCode(r + 65) + h;
-    } while (num-- > 0);
-    return h;
-};
-
-wxl.DataGrid.getColumnIndex = function(address) {
-    if (isInt(address)) {
-        col = address;
-    }
-    else
-    if (/[A-Z]+/.test(address)) {
-        var i, n = address.length-1, col = 0;
-        for (i=n; i >= 0; i--) {
-            col += (address.charCodeAt(i) - 64);
-        }
-    }
-    else
-    if (/\d+/) {
-        col = parseInt(address, 10);
-    }
-    return col;
-}
-
-wxl.DataGrid.getCellName = function(td){
-    return  wxl.DataGrid.getColumnHeaderName(td.cellIndex-1) + 
-            td.parentNode.rowIndex
-    ;
-}
-
-wxl.DataGrid.prototype = {
+}).prototype = {
     render: function(){
         var me = this,
             config = me.config,
@@ -1254,20 +1208,53 @@ wxl.DataGrid.prototype = {
 };
 
 merge(wxl.DataGrid.prototype, Observable.prototype);
+
+wxl.DataGrid.getColumnHeaderName = function(num){
+    var r,h="";
+    do {
+        r = num % 26;
+        num = (num - r) / 26;
+        h = String.fromCharCode(r + 65) + h;
+    } while (num-- > 0);
+    return h;
+};
+
+wxl.DataGrid.getColumnIndex = function(address) {
+    if (isInt(address)) {
+        col = address;
+    }
+    else
+    if (/[A-Z]+/.test(address)) {
+        var i, n = address.length-1, col = 0;
+        for (i=n; i >= 0; i--) {
+            col += (address.charCodeAt(i) - 64);
+        }
+    }
+    else
+    if (/\d+/) {
+        col = parseInt(address, 10);
+    }
+    return col;
+};
+
+wxl.DataGrid.getCellName = function(td){
+    return  wxl.DataGrid.getColumnHeaderName(td.cellIndex-1) + 
+            td.parentNode.rowIndex
+    ;
+};
+
 /***************************************************************
 *   
 *   Resizable
 *
 ***************************************************************/
-window["wxl"]["Resizable"] = function(config) {
+(win["wxl"]["Resizable"] = function(config) {
     this.config = merge(config, {
         rows: true,
         columns: true
     });
     this.init();
-};
-
-wxl.Resizable.prototype = {
+}).prototype = {
     init: function(){ 
         var config = this.config,
             dataGrid = config.dataGrid;
@@ -1311,12 +1298,10 @@ wxl.Resizable.prototype = {
     }
 };
 
-window["wxl"]["ResizableDDSupport"] = function(config) {
+(win["wxl"]["ResizableDDSupport"] = function(config) {
     this.config = config;
     this.init();
-};
-
-wxl.ResizableDDSupport.prototype = {
+}).prototype = {
     init: function() {
         var config = this.config,
             dataGrid = config.dataGrid,
@@ -1411,15 +1396,13 @@ wxl.ResizableDDSupport.prototype = {
 *   Movable
 *
 ***************************************************************/
-window["wxl"]["Movable"] = function(config) {
+(win["wxl"]["Movable"] = function(config) {
     this.config = merge(config, {
         rows: true,
         columns: true
     });
     this.init();
-};
-
-wxl.Movable.prototype = {
+}).prototype = {
     init: function(){ 
         var config = this.config,
             dataGrid = config.dataGrid;
@@ -1497,12 +1480,10 @@ wxl.Movable.prototype = {
     }
 };
 
-window["wxl"]["MovableDDSupport"] = function(config) {
+(win["wxl"]["MovableDDSupport"] = function(config) {
     this.config = config;
     this.init();
-};
-
-wxl.MovableDDSupport.prototype = {
+}).prototype = {
    init: function() {
         var config = this.config,
             dataGrid = config.dataGrid,
@@ -1661,15 +1642,13 @@ wxl.MovableDDSupport.prototype = {
 *   CellEditor
 *
 ***************************************************************/
-window["wxl"]["CellEditor"] = function(config) {
+(win["wxl"]["CellEditor"] = function(config) {
     this.config = config = merge(config, {
     });    
     this.dataGrid = null;
     this.cell = null;
     this.init();
-};
-
-wxl.CellEditor.prototype = {
+}).prototype = {
     init: function(){
         var dataGrid = this.config.dataGrid;
         dataGrid.listen("cellactivated", this.cellActivated, this);
@@ -1827,12 +1806,10 @@ wxl.CellEditor.prototype = {
 *   KeyboardNavigable
 *
 ***************************************************************/
-win["wxl"]["KeyboardNavigable"] = function(config) {
+(win["wxl"]["KeyboardNavigable"] = function(config) {
     this.config = config;
     this.init();
-};
-
-wxl.KeyboardNavigable.prototype = {
+}).prototype = {
     init: function() {
         var me = this,
             dataGrid = me.config.dataGrid;
@@ -1917,13 +1894,11 @@ wxl.KeyboardNavigable.prototype = {
 *
 ***************************************************************/
 
-win["wxl"]["CellNavigator"] = function(config) {
+(win["wxl"]["CellNavigator"] = function(config) {
     this.config = config = merge(config, {
     }); 
     this.init();
-};
-
-wxl.CellNavigator.prototype = {
+}).prototype = {
     init: function(){
         var dataGrid = this.config.dataGrid;
         dataGrid.listen("cellactivated", this.cellActivated, this);
@@ -1947,14 +1922,24 @@ wxl.CellNavigator.prototype = {
     focusHandler: function() {
         this.input.select();
     }
-}
+};
+/***************************************************************
+*   
+*   CellValues
+*
+***************************************************************/
+(win["wxl"]["CellValues"] = function(config) {
+    
+}).prototype = {
+    
+};
 
 /***************************************************************
 *   
 *   Application
 *
 ***************************************************************/
-win["wxl"]["SpreadSheet"] = function(config) {
+(win["wxl"]["SpreadSheet"] = function(config) {
     this.config = merge(config, {
         id: body,
         numDisplayRows: 50,
@@ -1963,9 +1948,7 @@ win["wxl"]["SpreadSheet"] = function(config) {
         lastCol: 50,
     });
     this.render();
-};
-
-wxl.SpreadSheet.prototype = {
+}).prototype = {
     render: function() {
         var config = this.config,
             container = el(config.id),
