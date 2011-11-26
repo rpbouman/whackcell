@@ -36,6 +36,14 @@ function isArr(val){
     return val.constructor===Array;
 }
 
+function isNum(val){
+    return typeof(val)==="number";
+}
+
+function isInt(val){
+    return isNum(val) && (val===parseInt(val, 10));
+}
+
 function isEl(el) {
     return isObj(el) && el.nodeType===1;
 }
@@ -885,6 +893,12 @@ win["wxl"]["DataGrid"] = function(config){
     me.firstDisplayCol = config.firstDisplayCol ? config.firstDisplayCol : 1;
     me.firstDisplayRow = config.firstDisplayRow ? config.firstDisplayRow : 1;
     me.selection = [];
+    if (isObj(config.kbHandler)) {
+        this.kbHandler = config.kbHandler;
+    }
+    if (isObj(config.ddHandler)) {
+        this.ddHandler = config.ddHandler;
+    }
     me.render();
 };
 
@@ -899,9 +913,19 @@ wxl.DataGrid.getColumnHeaderName = function(num){
 };
 
 wxl.DataGrid.getColumnIndex = function(address) {
-    var i, n = address.length-1, col = 0;
-    for (i=n; i >= 0; i--) {
-        col += (address.charCodeAt(i) - 64);
+    if (isInt(address)) {
+        col = address;
+    }
+    else
+    if (/[A-Z]+/.test(address)) {
+        var i, n = address.length-1, col = 0;
+        for (i=n; i >= 0; i--) {
+            col += (address.charCodeAt(i) - 64);
+        }
+    }
+    else
+    if (/\d+/) {
+        col = parseInt(address, 10);
     }
     return col;
 }
@@ -981,7 +1005,6 @@ wxl.DataGrid.prototype = {
         ;
         me.table = tag("table", container);
         me.initStyleSheet(styles);
-        me.initResizing();
         return;
     },
     initStyleSheet: function(styles) {
@@ -1016,90 +1039,8 @@ wxl.DataGrid.prototype = {
         }
         return ddHandler;
     },
-    initResizing: function() {
-        var table = this.table;
-        this.getDDHandler().listen({
-            scope: this,
-            startDrag: function(event, ddHandler){
-                var target = event.getTarget();
-                if (target.tagName==="DIV" && hasClass(target, "wxl_resize")) {
-                    var pos = event.getXY(), 
-                        tabPos = position(table), 
-                        cls,
-                        startDragEvent = ddHandler.startDragEvent,
-                        dragProxy = ddHandler.dragProxy,
-                        dragProxyStyle = dragProxy.style 
-                    ;
-                    dragProxy.className = "";
-                    if (hasClass(target, "wxl_resize_vertical")) {
-                        pos.y += target.clientHeight;
-                        dragProxyStyle.width = table.clientWidth + "px";;
-                        dragProxyStyle.height = "1px";
-                        dragProxyStyle.top = (startDragEvent.top = (pos.y - tabPos.top)) + "px";
-                        dragProxyStyle.left = "0px";
-                        cls = "wxl_resizer_vertical";
-                    }
-                    else
-                    if (hasClass(target, "wxl_resize_horizontal")) {
-                        pos.x += target.clientWidth;
-                        dragProxyStyle.width = "1px";
-                        dragProxyStyle.height = table.clientHeight + "px";
-                        dragProxyStyle.left = (startDragEvent.left = (pos.x - tabPos.left)) + "px";
-                        dragProxyStyle.top = "0px";
-                        cls = "wxl_resizer_horizontal";
-                    }
-                    startDragEvent.cls = cls;
-                    addClasses(dragProxy,  ["wxl_resizer", cls]);
-                    return true;
-                }
-                return false;
-            },
-            endDrag: function(event, ddHandler){
-                var dragProxy = ddHandler.dragProxy,
-                    startDragEvent = ddHandler.startDragEvent,
-                    target = startDragEvent.target,
-                    targetParent = target.parentNode,
-                    startPos = startDragEvent.getXY(),
-                    pos = event.getXY(),
-                    clientDim, newDim, minDim
-                ;
-                dragProxy.className = "";
-                if (hasClass(target, "wxl_resize_vertical")) {
-                    clientDim = targetParent.clientHeight;
-                    newDim = clientDim + (pos.y - startPos.y);
-                    minDim = target.clientHeight;
-                    targetParent.style.height = (newDim >= minDim ? newDim : minDim) + "px";
-                }
-                else
-                if (hasClass(target, "wxl_resize_horizontal")) {
-                    clientDim = targetParent.clientWidth;
-                    newDim = clientDim + (pos.x - startPos.x);
-                    minDim = target.clientWidth;
-                    targetParent.style.width = (newDim >= minDim ? newDim : minDim) + "px";
-                }
-                this.kbHandler.focus();
-            },
-            whileDrag: function(event, ddHandler){
-                var dragProxy = ddHandler.dragProxy,
-                    startDragEvent = ddHandler.startDragEvent,
-                    startXY = startDragEvent.getXY(),
-                    xy = event.getXY()
-                ;
-                switch (startDragEvent.cls) {
-                    case "wxl_resizer_vertical":
-                        dragProxy.style.top = (startDragEvent.top + (xy.y - startXY.y)) + "px";
-                        break;
-                    case "wxl_resizer_horizontal":
-                        dragProxy.style.left = (startDragEvent.left + (xy.x - startXY.x)) + "px";
-                        break;
-                }
-            }
-        });
-    },
     getColumnHeader: function(col){
-        if (/[A-Z]+/.test(col)) {
-            col = wxl.DataGrid.getColumnIndex(col);
-        }
+        col = wxl.DataGrid.getColumnIndex(col);
         return this.table.rows.item(0).cells.item(col);
     },
     getRowHeader: function(row) {
@@ -1313,14 +1254,168 @@ wxl.DataGrid.prototype = {
 };
 
 merge(wxl.DataGrid.prototype, Observable.prototype);
-
 /***************************************************************
 *   
-*   CellEditor
+*   Resizable
+*
+***************************************************************/
+window["wxl"]["Resizable"] = function(config) {
+    this.config = merge(config, {
+        rows: true,
+        columns: true
+    });
+    this.init();
+};
+
+wxl.Resizable.prototype = {
+    init: function(){ 
+        var config = this.config,
+            dataGrid = config.dataGrid;
+        if (config.columns!==false) {
+            dataGrid.setColumnWidth = this.setColumnWidth;
+            dataGrid.getColumnWidth = this.getColumnWidth;
+        }
+        if (config.rows!==false) {
+            dataGrid.setRowHeight = this.setRowHeight;
+            dataGrid.getRowHeight = this.getRowHeight;
+        }
+        if (config.ddsupport) {
+            new wxl.ResizableDDSupport(
+                merge(config.ddsupport, config)
+            );
+        }
+    },
+    setColumnWidth: function(index, width) {
+        var div = tag("DIV", this.getColumnHeader(index)),
+            sizer = tag("DIV", div)
+        ;
+        if (sizer && width < sizer.clientWidth) {
+            width = sizer.clientWidth;
+        }
+        div.style.width = width + "px";
+    },
+    getColumnWidth: function(index) {
+        return tag("DIV", this.getColumnHeader(index)).clientWidth;
+    },
+    setRowHeight: function(index, height) {
+        var div = tag("DIV", this.getRowHeader(index)),
+            sizer = tag("DIV", div)
+        ;
+        if (sizer && width < sizer.clientHeight) {
+            height = sizer.clientHeight;
+        }
+        div.style.height = height + "px";
+    },
+    getRowHeight: function(index) {
+        return tag("DIV", this.getRowHeader(index)).clientHeight;
+    }
+};
+
+window["wxl"]["ResizableDDSupport"] = function(config) {
+    this.config = config;
+    this.init();
+};
+
+wxl.ResizableDDSupport.prototype = {
+    init: function() {
+        var config = this.config,
+            dataGrid = config.dataGrid,
+            container = dataGrid.container,
+            table = dataGrid.table
+        ;
+        dataGrid.getDDHandler().listen({
+            scope: this,
+            startDrag: function(event, ddHandler){
+                var target = event.getTarget();
+                if (target.tagName==="DIV" && hasClass(target, "wxl_resize")) {
+                    var pos = event.getXY(), 
+                        tabPos = position(table), 
+                        cls,
+                        startDragEvent = ddHandler.startDragEvent,
+                        dragProxy = ddHandler.dragProxy,
+                        dragProxyStyle = dragProxy.style 
+                    ;
+                    dragProxy.className = "";
+                    if (hasClass(target, "wxl_resize_vertical")) {
+                        if (config.rows===false) return false; 
+
+                        pos.y += target.clientHeight;
+                        dragProxyStyle.width = table.clientWidth + "px";;
+                        dragProxyStyle.height = "1px";
+                        dragProxyStyle.top = (startDragEvent.top = (pos.y - tabPos.top)) + "px";
+                        dragProxyStyle.left = "0px";
+                        cls = "wxl_resizer_vertical";
+                    }
+                    else
+                    if (hasClass(target, "wxl_resize_horizontal")) {
+                        if (config.columns===false) return false; 
+
+                        pos.x += target.clientWidth;
+                        dragProxyStyle.width = "1px";
+                        dragProxyStyle.height = table.clientHeight + "px";
+                        dragProxyStyle.left = (startDragEvent.left = (pos.x - tabPos.left)) + "px";
+                        dragProxyStyle.top = "0px";
+                        cls = "wxl_resizer_horizontal";
+                    }
+                    startDragEvent.cls = cls;
+                    addClasses(dragProxy,  ["wxl_resizer", cls]);
+                    return true;
+                }
+                return false;
+            },
+            whileDrag: function(event, ddHandler){
+                var dragProxy = ddHandler.dragProxy,
+                    startDragEvent = ddHandler.startDragEvent,
+                    startXY = startDragEvent.getXY(),
+                    xy = event.getXY()
+                ;
+                switch (startDragEvent.cls) {
+                    case "wxl_resizer_vertical":
+                        dragProxy.style.top = (startDragEvent.top + (xy.y - startXY.y)) + "px";
+                        break;
+                    case "wxl_resizer_horizontal":
+                        dragProxy.style.left = (startDragEvent.left + (xy.x - startXY.x)) + "px";
+                        break;
+                }
+            },
+            endDrag: function(event, ddHandler){
+                var dragProxy = ddHandler.dragProxy,
+                    startDragEvent = ddHandler.startDragEvent,
+                    target = startDragEvent.target,
+                    targetParent = target.parentNode,
+                    startPos = startDragEvent.getXY(),
+                    pos = event.getXY(),
+                    clientDim, newDim, minDim
+                ;
+                dragProxy.className = "";
+                if (hasClass(target, "wxl_resize_vertical")) {
+                    clientDim = targetParent.clientHeight;
+                    newDim = clientDim + (pos.y - startPos.y);
+                    minDim = target.clientHeight;
+                    targetParent.style.height = (newDim >= minDim ? newDim : minDim) + "px";
+                }
+                else
+                if (hasClass(target, "wxl_resize_horizontal")) {
+                    clientDim = targetParent.clientWidth;
+                    newDim = clientDim + (pos.x - startPos.x);
+                    minDim = target.clientWidth;
+                    targetParent.style.width = (newDim >= minDim ? newDim : minDim) + "px";
+                }
+                dataGrid.getKBHandler().focus();
+            }
+        });
+    }
+};
+/***************************************************************
+*   
+*   Movable
 *
 ***************************************************************/
 window["wxl"]["Movable"] = function(config) {
-    this.config = config;
+    this.config = merge(config, {
+        rows: true,
+        columns: true
+    });
     this.init();
 };
 
@@ -1328,15 +1423,12 @@ wxl.Movable.prototype = {
     init: function(){ 
         var config = this.config,
             dataGrid = config.dataGrid;
-        dataGrid.moveRow = this.moveRow;
-        dataGrid.moveColumn = this.moveColumn;
-        if (config = config.ddsupport) {
-            config = merge(config, {
-                dataGrid: dataGrid,
-                rows: true,
-                columns: true
-            })
-            new wxl.MovableDDSupport(config);
+        if (config.rows!==false) dataGrid.moveRow = this.moveRow;
+        if (config.columns!==false) dataGrid.moveColumn = this.moveColumn;
+        if (config.ddsupport) {
+            new wxl.MovableDDSupport(
+                merge(config.ddsupport, config)
+            );
         }
     },
     moveRow: function(sourceIndex, targetIndex) {
@@ -1476,47 +1568,6 @@ wxl.MovableDDSupport.prototype = {
                 }
                 return false;
             },
-            endDrag: function(event, ddHandler){
-                var dragProxy = ddHandler.dragProxy,
-                    dragProxyStyle = dragProxy.style,
-                    dropProxy = ddHandler.dropProxy,
-                    dropProxyStyle = dropProxy.style,
-                    startEvent = ddHandler.startDragEvent,
-                    startTarget = startEvent.target,
-                    targetPos,
-                    target = event.getTarget(),
-                    targetParent = target.parentNode,
-                    targetIndex,
-                    xy = event.getXY()
-                ;
-                switch(startEvent.cls){
-                    case "wxl_row_mover":
-                        if (target.tagName === "DIV" && hasClass(target, "wxl_row_header")) {
-                            sourceIndex = startTarget.parentNode.parentNode.rowIndex;
-                            targetIndex = targetParent.parentNode.rowIndex;
-                            targetPos = position(targetParent);
-                            if ((xy.y - targetPos.top) >= (targetParent.clientHeight/2)) {
-                                targetIndex++;
-                            }
-                            dataGrid.moveRow(sourceIndex, targetIndex);
-                        }
-                        break;
-                    case "wxl_column_mover":
-                        if (target.tagName === "DIV" && hasClass(target, "wxl_column_header")) {
-                            sourceIndex = startTarget.parentNode.cellIndex;
-                            targetIndex = targetParent.cellIndex;
-                            targetPos = position(targetParent);
-                            if ((xy.x - targetPos.left) >= (targetParent.clientWidth/2)) {
-                                targetIndex++;
-                            }
-                            dataGrid.moveColumn(sourceIndex, targetIndex);
-                        }
-                        break;
-                }
-                dragProxy.className = "";
-                dropProxyStyle.display = "none";
-                dataGrid.getKBHandler().focus();
-            },
             whileDrag: function(event, ddHandler){
                 var dragProxy = ddHandler.dragProxy,
                     dragProxyStyle = dragProxy.style,
@@ -1560,6 +1611,47 @@ wxl.MovableDDSupport.prototype = {
                         }
                         break;
                 }
+            },
+            endDrag: function(event, ddHandler){
+                var dragProxy = ddHandler.dragProxy,
+                    dragProxyStyle = dragProxy.style,
+                    dropProxy = ddHandler.dropProxy,
+                    dropProxyStyle = dropProxy.style,
+                    startEvent = ddHandler.startDragEvent,
+                    startTarget = startEvent.target,
+                    targetPos,
+                    target = event.getTarget(),
+                    targetParent = target.parentNode,
+                    targetIndex,
+                    xy = event.getXY()
+                ;
+                switch(startEvent.cls){
+                    case "wxl_row_mover":
+                        if (target.tagName === "DIV" && hasClass(target, "wxl_row_header")) {
+                            sourceIndex = startTarget.parentNode.parentNode.rowIndex;
+                            targetIndex = targetParent.parentNode.rowIndex;
+                            targetPos = position(targetParent);
+                            if ((xy.y - targetPos.top) >= (targetParent.clientHeight/2)) {
+                                targetIndex++;
+                            }
+                            dataGrid.moveRow(sourceIndex, targetIndex);
+                        }
+                        break;
+                    case "wxl_column_mover":
+                        if (target.tagName === "DIV" && hasClass(target, "wxl_column_header")) {
+                            sourceIndex = startTarget.parentNode.cellIndex;
+                            targetIndex = targetParent.cellIndex;
+                            targetPos = position(targetParent);
+                            if ((xy.x - targetPos.left) >= (targetParent.clientWidth/2)) {
+                                targetIndex++;
+                            }
+                            dataGrid.moveColumn(sourceIndex, targetIndex);
+                        }
+                        break;
+                }
+                dragProxy.className = "";
+                dropProxyStyle.display = "none";
+                dataGrid.getKBHandler().focus();
             }
         });
     }
@@ -1916,9 +2008,12 @@ wxl.SpreadSheet.prototype = {
         //allow columns and rows to be moved around
         movable  = new wxl.Movable({
             dataGrid: dataGrid,
-            ddsupport: {
-                rows: false
-            }
+            ddsupport: true
+        });
+        //allow columns and rows to be moved around
+        resizable  = new wxl.Resizable({
+            dataGrid: dataGrid,
+            //ddsupport: true
         });
         
         //add a celleditor
