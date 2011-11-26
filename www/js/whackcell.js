@@ -1186,10 +1186,10 @@ wxl.DataGrid.prototype = {
     getRows: function() {
         return this.table.rows;
     },
-    getCellText: function(cell) {
+    getCellContent: function(cell) {
         return txt(tag("DIV", cell));
     },
-    setCellText: function(cell, text) {
+    setCellContent: function(cell, text) {
         tag("DIV", cell).innerHTML = escXML(text);
     },
     clearCell: function(cell) {
@@ -1688,14 +1688,11 @@ wxl.CellEditor.prototype = {
         listen(textarea, "click", me.clickHandler, me);
         me.textarea = textarea;
     },
-    focus: function(){
-        this.textarea.focus();
-    },
     setEnabled: function(enabled) {
         this.textarea.disabled = !enabled;
     },
     cellActivated: function(dataGrid, event, cell){
-        this.textarea.value = dataGrid.getCellText(cell);
+        this.textarea.value = dataGrid.getCellContent(cell);
     },
     isEditing: function() {
         return this.editing;
@@ -1807,20 +1804,22 @@ wxl.CellEditor.prototype = {
             default:
                 var cell = this.cell;
                 if (cell) {
-                    this.config.dataGrid.setCellText(cell, this.textarea.value);
+                    this.config.dataGrid.setCellContent(cell, this.textarea.value);
                 }
         }
         return false;
     },
+    focus: function(){
+        this.textarea.focus();
+    },
     focusHandler: function(e) {
-        if (this.spreadSheet && this.cell) {
-            this.startEditing(this.spreadSheet, "focus", this.cell);
+        var dataGrid = this.config.dataGrid, cell; 
+        if (dataGrid &&  (cell = dataGrid.getActiveCell())) {
+            this.startEditing(dataGrid, "focus", cell);
         }
     },
     clickHandler: function(e) {
-        if (this.spreadSheet && this.cell) {
-            this.focus();
-        }
+        this.focus();
     }
 };
 /***************************************************************
@@ -1852,7 +1851,6 @@ wxl.KeyboardNavigable.prototype = {
         ;
         switch (event.getKeyCode()) {
             case 9:    //right
-                event.preventDefault(); 
                 if (event.getShiftKey()) {
                     if (--cellIndex === 0){
                         cellIndex = row.cells.length-1;
@@ -1896,6 +1894,7 @@ wxl.KeyboardNavigable.prototype = {
             default:
                 return;
         }
+        event.preventDefault(); 
         if (!cellIndex || !rowIndex) {
             return;
         }
@@ -1909,7 +1908,7 @@ wxl.KeyboardNavigable.prototype = {
         }
         dataGrid.setActiveCell(cell);
         return false;
-    },
+    }
 };
 
 /***************************************************************
@@ -2013,7 +2012,7 @@ wxl.SpreadSheet.prototype = {
         //allow columns and rows to be moved around
         resizable  = new wxl.Resizable({
             dataGrid: dataGrid,
-            //ddsupport: true
+            ddsupport: true
         });
         
         //add a celleditor
