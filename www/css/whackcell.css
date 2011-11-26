@@ -12,7 +12,8 @@ body {
  */
 div.wxl_spreadsheet {
     position: absolute;
-    top: bottom: 0px;
+    top: 0px;
+    bottom: 0px;
     right: 0px;
     bottom: 0px;
 }
