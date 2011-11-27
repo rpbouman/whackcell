@@ -55,10 +55,11 @@ function forPinO(o, f, scope){
     for (var p in o){
         if (o.hasOwnProperty(p)){
             if(f.call(scope, p, o[p])===false){
-                return;
+                return false;
             }
         }
     }
+    return true;
 }
 
 function forIinA(a, f, scope){
@@ -67,9 +68,10 @@ function forIinA(a, f, scope){
     }
     for (var i=0, l=a.length; i<l; i++){
         if(f.call(scope, i, a[i])===false){
-            return;
+            return false;
         }
     }
+    return true;
 }
 
 function position(e1, e2){
@@ -230,7 +232,7 @@ function addClass(e, classes){
 }
 
 function removeClasses(e, classes){
-    addOrRemoveClasses(e, classes, MERGE_MODE_DELETE);
+    addOrRemoveClasses(e, classes, merge.DELETE);
 }
 
 function removeClass(e, classes){
@@ -299,12 +301,6 @@ function _crEl(tag, atts, chs, p){
     return el;
 }
 
-var MERGE_MODE_MERGE = 0,
-    MERGE_MODE_OVERWRITE = 1,
-    MERGE_MODE_DELETE_IF_NULL = 2,
-    MERGE_MODE_DELETE = 4
-;
-
 function merge(dst, src, mode){
     var p,v;
     mode = parseInt(mode, 10);
@@ -313,16 +309,21 @@ function merge(dst, src, mode){
         dst = {};
     }
     forPinO(src, function(p, o){
-        if (((o===null) && (mode & MERGE_MODE_DELETE_IF_NULL)) || (mode & MERGE_MODE_DELETE)) {
+        if (((o===null) && (mode & merge.DELETE_IF_NULL)) || (mode & merge.DELETE)) {
             delete dst[p];
         }
         else 
-        if (isUnd(dst[p]) || (mode&MERGE_MODE_OVERWRITE)) {
+        if (isUnd(dst[p]) || (mode & merge.OVERWRITE)) {
             dst[p] = o;
         }
     });
     return dst;
 }
+
+merge.MERGE = 0;
+merge.OVERWRITE = 1;
+merge.DELETE_IF_NULL = 2;
+merge.DELETE = 4;
 
 /***************************************************************
 *   
@@ -453,21 +454,23 @@ function listen(node, type, listener, scope) {
 var Observable;
 (Observable = function() {
 }).prototype = {
-    listen: function(type, method, scope) {
-        var listeners, handlers;
+    listen: function(type, method, scope, context) {
+        var listeners, handlers, scope;
         if (!(listeners = this.listeners)) {
             listeners = this.listeners = {};
         }
         if (!(handlers = listeners[type])){
             handlers = listeners[type] = [];
         }
+        scope = (scope ? scope : win);
         handlers.push({
             method: method,
-            scope: (scope ? scope : win)
+            scope: scope,
+            context: (context ? context : scope)
         });
     },
-    fireEvent: function(type, data) {
-        var listeners, handlers, i, n, handler;
+    fireEvent: function(type, data, context) {
+        var listeners, handlers, i, n, handler, scope;
         if (!(listeners = this.listeners)) {
             return;
         }
@@ -476,6 +479,7 @@ var Observable;
         }
         for (i = 0, n = handlers.length; i < n; i++){
             handler = handlers[i];
+            if (!isUnd(context) && context !== handler.context) continue; 
             if (handler.method.call(
                 handler.scope, this, type, data
             )===false) {
@@ -620,7 +624,7 @@ var DDHandler;
 var KBHandler;
 (KBHandler = function (config) {
     this.config = config;
-}).prototype = {
+}).prototype = merge({
     render: function() {
         var me = this,
             config = me.config,
@@ -649,9 +653,7 @@ var KBHandler;
     focus: function() {
         this.textArea.focus();
     }
-};
-
-merge(KBHandler.prototype, Observable.prototype);
+}, Observable.prototype);
 
 /***************************************************************
 *   
@@ -719,7 +721,7 @@ win["wxl"] = {};
         if (s === null) {
             return;
         }
-        merge(s, style, MERGE_MODE_DELETE);
+        merge(s, style, merge.DELETE);
     },
     applyStyle: function(selector, style, create){
         var r = this.getRule(selector);
@@ -729,7 +731,7 @@ win["wxl"] = {};
             }
             return;
         }
-        merge(r.style, style, MERGE_MODE_OVERWRITE);
+        merge(r.style, style, merge.OVERWRITE);
         
     },
     getCssText: function(properties) {
@@ -890,7 +892,7 @@ win["wxl"] = {};
         this.ddHandler = config.ddHandler;
     }
     me.render();
-}).prototype = {
+}).prototype = merge({
     render: function(){
         var me = this,
             config = me.config,
@@ -1141,9 +1143,15 @@ win["wxl"] = {};
         return this.table.rows;
     },
     getCellContent: function(cell) {
-        return txt(tag("DIV", cell));
+        return this.getCellText();
     },
     setCellContent: function(cell, text) {
+        this.setCellText(cell, text);
+    },
+    getCellText: function(cell) {
+        return txt(tag("DIV", cell));
+    },
+    setCellText: function(cell, text) {
         tag("DIV", cell).innerHTML = escXML(text);
     },
     clearCell: function(cell) {
@@ -1203,11 +1211,12 @@ win["wxl"] = {};
                 break;
         }
     },
-    setDisplayDimensions: function(numRows, numCols){
+    setCellEditor: function(cellEditor) {
+        cellEditor.initDataGrid(this);
+    },
+    setCellNavigator: function() {
     }
-};
-
-merge(wxl.DataGrid.prototype, Observable.prototype);
+}, Observable.prototype);
 
 wxl.DataGrid.getColumnHeaderName = function(num){
     var r,h="";
@@ -1647,13 +1656,11 @@ wxl.DataGrid.getCellName = function(td){
     });    
     this.dataGrid = null;
     this.cell = null;
-    this.init();
+    this.render();
 }).prototype = {
-    init: function(){
-        var dataGrid = this.config.dataGrid;
+    initDataGrid: function(dataGrid){
         dataGrid.listen("cellactivated", this.cellActivated, this);
         dataGrid.getKBHandler().listen("keydown", this.dataGridKeyDownHandler, this);
-        this.render();
     },
     render: function() {
         var me = this,
@@ -1671,28 +1678,48 @@ wxl.DataGrid.getCellName = function(td){
         this.textarea.disabled = !enabled;
     },
     cellActivated: function(dataGrid, event, cell){
+        if (this.isEditing() && cell!==this.cell) {
+            if (!this.stopEditing()) return false;
+        } 
+        this.dataGrid = dataGrid;
+        this.cell = cell;
         this.textarea.value = dataGrid.getCellContent(cell);
     },
     isEditing: function() {
         return this.editing;
     },
     startEditing: function(dataGrid, event, cell) {
+        var me = this;
+        me.textarea.select();
+        me.dataGrid = dataGrid;
         addClass(this.textarea, "wxl_active");
-        this.textarea.select();
-        this.cell = cell;
-        this.editing = true;
+        me.cell = cell;
+        me.editing = true;
+        me.syncCell();
+        addClass(cell, "wxl_editing");
         if (event !== "focus" ) {
-            this.focus();
+            me.focus();
         }
     },
     stopEditing: function() {
-        removeClass(this.textarea, "wxl_active");
-        this.editing = false;
-        var dataGrid = this.config.dataGrid;
-        if (dataGrid) {
-            this.textarea.blur();
+        var dataGrid = this.dataGrid,
+            cell = this.cell,
+            textarea = this.textarea
+        ;
+        try {
+            dataGrid.setCellContent(cell, textarea.value);
+            removeClass(textarea, "wxl_active");
+            this.editing = false;
+            removeClass(cell, "wxl_editing");
+            textarea.blur();
             dataGrid.focus();
+            this.cell = null;
+            this.dataGrid = null;
+            stopEditing = true;
+        } catch (exception) {
+            stopEditing = false;
         }
+        return stopEditing;
     },
     dataGridKeyDownHandler: function(kbHandler, type, event){
         var keyCode = event.getKeyCode();
@@ -1726,8 +1753,9 @@ wxl.DataGrid.getCellName = function(td){
             case 123:   //F12
                 return;
         }
-        var dataGrid = this.config.dataGrid,
-            cell = dataGrid.activeCell
+        var dataGrid = this.dataGrid,
+            cell = this.cell
+        ;
         if (cell) {
             if (keyCode === 46) {
                 dataGrid.clearCell(cell);
@@ -1752,10 +1780,11 @@ wxl.DataGrid.getCellName = function(td){
             case 38:    //up
             case 39:    //right
             case 40:    //down
-                var dataGrid = this.config.dataGrid;
-                if ((keyCode===9 || keyCode===13) && dataGrid) {
-                    if (this.isEditing()) {
-                        this.stopEditing();
+                var dataGrid = this.dataGrid;
+                if ((keyCode===9 || keyCode===13)
+                &&  this.isEditing()
+                ) {
+                    if (this.stopEditing()) {
                         var kbHandler = dataGrid.getKBHandler();
                         kbHandler.focus();
                         kbHandler.fireEvent("keydown", e);
@@ -1781,24 +1810,133 @@ wxl.DataGrid.getCellName = function(td){
                 e.preventDefault();
                 break;
             default:
-                var cell = this.cell;
-                if (cell) {
-                    this.config.dataGrid.setCellContent(cell, this.textarea.value);
-                }
+                this.syncCell();
         }
         return false;
+    },
+    syncCell: function() {
+        var dataGrid = this.dataGrid;
+        dataGrid.setCellText(dataGrid.getActiveCell(), this.textarea.value);
     },
     focus: function(){
         this.textarea.focus();
     },
     focusHandler: function(e) {
-        var dataGrid = this.config.dataGrid, cell; 
+        var dataGrid = this.dataGrid, cell; 
         if (dataGrid &&  (cell = dataGrid.getActiveCell())) {
             this.startEditing(dataGrid, "focus", cell);
         }
     },
     clickHandler: function(e) {
         this.focus();
+    }
+};
+/***************************************************************
+*   
+*   CellValues
+*
+***************************************************************/
+(win["wxl"]["CellValues"] = function(config) {
+    this.config = config;
+    this.init();
+}).prototype = {
+    patterns: [
+        {
+            regexp: /'(.+)/,
+            parser: function(arr){
+                return {
+                    value: arr[0].substr(1)
+                };
+            },
+            toText: function(value){
+                return value;
+            }
+        },
+        {
+            regexp: /=(.+)/,
+            parser: function(arr){
+                return {
+                    error: "Not yet implemented"
+                };
+            },
+            toText: function(value) {
+                return value;
+            }
+        },
+        {
+            regexp: /[+-]?((((\d+)|(\d{1,3}(,\d{3})+))(\.\d*)?)|(\.\d+))([eE][+-]?\d+)?/,
+            parser: function(arr){
+                return {
+                    value: Number(arr[0].replace(",", ""))
+                };
+            },
+            toText: function(value) {
+                return String(value);
+            }
+        }
+    ],
+    init: function() {
+        var config = this.config,
+            dataGrid = config.dataGrid,
+            pattern, groups = 0
+        ;
+        dataGrid.valueHelper = this;
+        dataGrid.setCellContent = this.setCellContent;
+        dataGrid.getCellContent = this.getCellContent;
+        pattern = "";
+        forIinA(this.patterns, function(i, a){
+            var source, noLiteralParenthesis 
+            if (pattern.length) {
+                pattern += "|";
+            }
+            source = a.regexp.source;
+            groups += 1;
+            a.startGroup = groups;
+            noLiteralParenthesis = source.replace(/\\\(/g, "");
+            groups += noLiteralParenthesis.length - noLiteralParenthesis.replace(/\(/g, "").length;
+            a.endGroup = groups + 1;
+            pattern += "(" + source + ")";
+        });
+        //note that we must not set the global flag
+        //global flag will cause the regexp to maintain state
+        //leading to unexpected results.
+        this.regexp = new RegExp("^" + pattern + "$", "");
+    },
+    setCellContent: function(cell, content) {
+        var valueHelper = this.valueHelper,
+            obj = valueHelper.parse(content);
+        if (obj.error) {
+            throw obj.error;
+        }
+        _sAtt(cell, "data-content", content);
+        if (obj.type) {
+            obj = obj.type.toText(obj.value);
+        }
+        else {
+            obj = obj.value;
+        }
+        this.setCellText(cell, obj);
+    },
+    getCellContent: function(cell) {
+        var content = _gAtt(cell, "data-content");
+        return (content===null) ?  this.getCellText(cell) : content;
+    },
+    parse: function(text){
+        var items = this.regexp.exec(text), value;
+        if (!items) return {
+            value: text
+        };
+        if(forIinA(this.patterns, function(i, a){
+            if (isUnd(items[a.startGroup])) return;
+            value = a.parser(items.slice(a.startGroup, a.endGroup));
+            value.type = a;
+            return false;
+        })) {
+            return {
+                value: text
+            };
+        }
+        return value;
     }
 };
 /***************************************************************
@@ -1908,7 +2046,7 @@ wxl.DataGrid.getCellName = function(td){
         var me = this,
             input = el(me.config.input)
         ;
-        input.size = 8;
+        input.size = 4;
         input.className = "wxl_cellnavigator";
         listen(input, "change", this.changeHandler, this);
         listen(input, "focus", this.focusHandler, this);
@@ -1922,16 +2060,6 @@ wxl.DataGrid.getCellName = function(td){
     focusHandler: function() {
         this.input.select();
     }
-};
-/***************************************************************
-*   
-*   CellValues
-*
-***************************************************************/
-(win["wxl"]["CellValues"] = function(config) {
-    
-}).prototype = {
-    
 };
 
 /***************************************************************
@@ -1984,27 +2112,32 @@ wxl.DataGrid.getCellName = function(td){
         }, this.config));
         
         //allow grid to be navigated using the keyboard
-        keyboardNavigable = new wxl.KeyboardNavigable({
+        new wxl.KeyboardNavigable({
             dataGrid: dataGrid
         });
         //allow columns and rows to be moved around
-        movable  = new wxl.Movable({
+        new wxl.Movable({
             dataGrid: dataGrid,
             ddsupport: true
         });
         //allow columns and rows to be moved around
-        resizable  = new wxl.Resizable({
+        new wxl.Resizable({
             dataGrid: dataGrid,
             ddsupport: true
         });
+        //add a value helper
+        new wxl.CellValues({
+            dataGrid: dataGrid
+        });
         
         //add a celleditor
-        cellEditor = new wxl.CellEditor({
-            dataGrid: dataGrid,
-            textarea: cellEditor
-        });
-        //add a widget to show the cell address 
-        cellNavigator = new wxl.CellNavigator({
+        dataGrid.setCellEditor(
+            new wxl.CellEditor({
+                textarea: cellEditor
+            })
+        );
+        //add a widget to show the cell address
+        new wxl.CellNavigator({
             dataGrid: dataGrid,
             input: cellNavigator
         });

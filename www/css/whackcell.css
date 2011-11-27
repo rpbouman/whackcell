@@ -224,7 +224,7 @@ textarea.wxl_celleditor {
     bottom:0px;
     position:absolute;
     right: 0px;
-    left: 10em;
+    left: 5em;
     width:80%;
 }
 
@@ -240,4 +240,10 @@ input.wxl_cellnavigator {
     bottom:0px;
     position:absolute;
     left: 0px;
+}
+
+td.wxl_editing {
+    border-color: red;
+    background-color: blue;
+    color: white;
 }
