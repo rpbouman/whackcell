@@ -1879,7 +1879,7 @@ wxl.DataGrid.getCellName = function(td){
         },
         {   //see https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date/parse
             //see http://www.w3.org/TR/NOTE-datetime and http://tools.ietf.org/html/rfc822#section-5
-            regexp: /\d{2,4}[\/\.\-]\d{1,2}([\/\.\-]\d{1,2}(T\d\d:\d\d(:\d\d)?(Z|[+-]\d\d:\d\d))?)?/,
+            regexp: /(\d{2,4}[\/\.\-]\d{1,2}([\/\.\-]\d{1,2}(T\d\d:\d\d(:\d\d)?(Z|[+-]\d\d:\d\d))?)?)|(((Mon?|Tue?|Wed?|Thu?|Fri?|Sat?|Sun?),?\W*)?\d{1,2}\W*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\W*\d{1,4}(\W+\d\d:\d\d(:\d\d(\W+(UT|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|Z|A|M|N|Y|([+-]\W*\d{4})))?)?)?)/,
             parser: function(arr){
                 var ts = Date.parse(arr[0]),
                     obj = {}
@@ -1933,7 +1933,7 @@ wxl.DataGrid.getCellName = function(td){
         //note that we must not set the global flag
         //global flag will cause the regexp to maintain state
         //leading to unexpected results.
-        this.regexp = new RegExp("^" + pattern + "$", "");
+        this.regexp = new RegExp("^" + pattern + "$", "i");
     },
     setCellContent: function(cell, content) {
         var valueHelper = this.valueHelper,
