@@ -1690,16 +1690,17 @@ wxl.DataGrid.getCellName = function(td){
     },
     startEditing: function(dataGrid, event, cell) {
         var me = this;
-        me.textarea.select();
         me.dataGrid = dataGrid;
-        addClass(this.textarea, "wxl_active");
         me.cell = cell;
+        this.oldValue = dataGrid.getCellContent(cell);
         me.editing = true;
         me.syncCell();
+        addClass(this.textarea, "wxl_active");
         addClass(cell, "wxl_editing");
         if (event !== "focus" ) {
             me.focus();
         }
+        me.textarea.select();
     },
     stopEditing: function() {
         var dataGrid = this.dataGrid,
@@ -1769,9 +1770,20 @@ wxl.DataGrid.getCellName = function(td){
     keydownHandler: function(e) {
         var keyCode = e.getKeyCode();
         switch (keyCode) {
+            case 27:    //esc
+                this.textarea.value = this.oldValue;
             case 9:     //tab
             case 13:    //newline
-                e.preventDefault();
+                var dataGrid = this.dataGrid;
+                if (this.isEditing()) {
+                    e.preventDefault();
+                    if (this.stopEditing()) {
+                        var kbHandler = dataGrid.getKBHandler();
+                        kbHandler.focus();
+                        kbHandler.fireEvent("keydown", e);
+                    }
+                }
+                break;
             case 33:    //page up
             case 34:    //page down
             case 35:    //end
@@ -1780,16 +1792,6 @@ wxl.DataGrid.getCellName = function(td){
             case 38:    //up
             case 39:    //right
             case 40:    //down
-                var dataGrid = this.dataGrid;
-                if ((keyCode===9 || keyCode===13)
-                &&  this.isEditing()
-                ) {
-                    if (this.stopEditing()) {
-                        var kbHandler = dataGrid.getKBHandler();
-                        kbHandler.focus();
-                        kbHandler.fireEvent("keydown", e);
-                    }
-                }
                 break;
         }
         return false;
