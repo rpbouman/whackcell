@@ -272,6 +272,10 @@ function _sAtt(e, att, val){
     el(e).setAttribute(att, val);
 }
 
+function _rAtt(e, att){
+    el(e).removeAttribute(att);
+}
+
 function _chs(e, chs) {
     var m;
     e = el(e);
@@ -1155,6 +1159,7 @@ win["wxl"] = {};
         tag("DIV", cell).innerHTML = escXML(text);
     },
     clearCell: function(cell) {
+        _rAtt(cell, "data-content");
         tag("DIV", cell).innerHTML = "";
     },
     clickHandler: function(e) {
@@ -1866,6 +1871,24 @@ wxl.DataGrid.getCellName = function(td){
             }
         },
         {
+            regexp: /\d{2,4}[\/\.\-]\d{1,2}([\/\.\-]\d{1,2}(T\d\d:\d\d(:\d\d)?(Z|[+-]\d\d:\d\d))?)?/,
+            parser: function(arr){
+                var ts = Date.parse(arr[0]),
+                    obj = {}
+                ;
+                if (isNaN(ts)) {
+                    obj.error = "Invalid date";
+                }
+                else {
+                    obj.value = new Date(ts);
+                }
+                return obj;
+            },
+            toText: function(value) {
+                return value.toString();
+            }
+        },
+        {
             regexp: /[+-]?((((\d+)|(\d{1,3}(,\d{3})+))(\.\d*)?)|(\.\d+))([eE][+-]?\d+)?/,
             parser: function(arr){
                 return {
@@ -1929,7 +1952,7 @@ wxl.DataGrid.getCellName = function(td){
             value: text
         };
         if(forIinA(this.patterns, function(i, a){
-            if (isUnd(items[a.startGroup])) return;
+            if (items[a.startGroup]!==text) return;
             value = a.parser(items.slice(a.startGroup, a.endGroup));
             value.type = a;
             return false;
