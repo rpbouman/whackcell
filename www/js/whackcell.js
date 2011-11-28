@@ -74,6 +74,13 @@ function forIinA(a, f, scope){
     return true;
 }
 
+function free(o) {
+    var p;
+    for (p in o) {
+        if (o.hasOwnProperty(p)) delete o.p;
+    }
+};
+
 function position(e1, e2){
     var left = 0, top = 0;
     e1 = el(e1);
@@ -1870,7 +1877,8 @@ wxl.DataGrid.getCellName = function(td){
                 return value;
             }
         },
-        {
+        {   //see https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date/parse
+            //see http://www.w3.org/TR/NOTE-datetime and http://tools.ietf.org/html/rfc822#section-5
             regexp: /\d{2,4}[\/\.\-]\d{1,2}([\/\.\-]\d{1,2}(T\d\d:\d\d(:\d\d)?(Z|[+-]\d\d:\d\d))?)?/,
             parser: function(arr){
                 var ts = Date.parse(arr[0]),
@@ -1929,18 +1937,21 @@ wxl.DataGrid.getCellName = function(td){
     },
     setCellContent: function(cell, content) {
         var valueHelper = this.valueHelper,
-            obj = valueHelper.parse(content);
+            obj = valueHelper.parse(content),
+            value
+        ;
         if (obj.error) {
             throw obj.error;
         }
         _sAtt(cell, "data-content", content);
         if (obj.type) {
-            obj = obj.type.toText(obj.value);
+            value = obj.type.toText(obj.value);
         }
         else {
-            obj = obj.value;
+            value = obj.value;
         }
-        this.setCellText(cell, obj);
+        free(obj);
+        this.setCellText(cell, value);
     },
     getCellContent: function(cell) {
         var content = _gAtt(cell, "data-content");
