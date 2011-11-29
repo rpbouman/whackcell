@@ -1770,8 +1770,9 @@ wxl.DataGrid.getCellName = function(td){
             cell = this.cell
         ;
         if (cell) {
-            if (keyCode === 46) {
+            if (keyCode === 46) {   //del
                 dataGrid.clearCell(cell);
+                this.textarea.value = "";
             }
             else {
                 this.startEditing(dataGrid, event, cell);
