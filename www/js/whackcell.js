@@ -1586,33 +1586,32 @@ wxl.DataGrid.getCellName = function(td){
                 switch(startEvent.cls){
                     case "wxl_row_mover":
                         dragProxyStyle.top = (startEvent.top + (xy.y - startXY.y)) + "px";
-                        if (target.tagName === "DIV" && hasClass(target, "wxl_row_header")) {
-                            targetPos = position(targetParent);
-                            tabPos = position(table);
-                            dropProxyStyle.display = "";
-                            dropProxyStyle.top = (targetPos.top - tabPos.top) +
-                                (((xy.y - targetPos.top) < (targetParent.clientHeight/2)) ? 0 : targetParent.clientHeight) + "px"
-                            ;
-                        }
-                        else {
-                            dropProxyStyle.display = "none";
-                        }
-                        break;
+                        if (target.tagName === "SPAN") target = target.parentNode;
+                        if (target.tagName !== "DIV") break;
+                        if (hasClass(target, "wxl_resize")) target = target.parentNode;
+                        if (!hasClass(target, "wxl_row_header")) break;
+                        targetPos = position(targetParent);
+                        tabPos = position(table);
+                        dropProxyStyle.display = "";
+                        dropProxyStyle.top = (targetPos.top - tabPos.top) +
+                            (((xy.y - targetPos.top) < (targetParent.clientHeight/2)) ? 0 : targetParent.clientHeight) + "px"
+                        ;
+                        return;
                     case "wxl_column_mover":
                         dragProxyStyle.left = (startEvent.left + (xy.x - startXY.x)) + "px";
-                        if (target.tagName === "DIV" && hasClass(target, "wxl_column_header")) {
-                            targetPos = position(targetParent);
-                            tabPos = position(table);
-                            dropProxyStyle.display = "";
-                            dropProxyStyle.left = (targetPos.left - tabPos.left) +
-                                (((xy.x - targetPos.left) < (targetParent.clientWidth/2)) ? 0 : targetParent.clientWidth) + "px"
-                            ;
-                        }
-                        else {
-                            dropProxyStyle.display = "none";
-                        }
-                        break;
+                        if (target.tagName === "SPAN") target = target.parentNode;
+                        if (target.tagName !== "DIV") break;
+                        if (hasClass(target, "wxl_resize")) target = target.parentNode;
+                        if (!hasClass(target, "wxl_column_header")) break;
+                        targetPos = position(targetParent);
+                        tabPos = position(table);
+                        dropProxyStyle.display = "";
+                        dropProxyStyle.left = (targetPos.left - tabPos.left) +
+                            (((xy.x - targetPos.left) < (targetParent.clientWidth/2)) ? 0 : targetParent.clientWidth) + "px"
+                        ;
+                        return;
                 }
+                dropProxyStyle.display = "none";
             },
             endDrag: function(event, ddHandler){
                 var dragProxy = ddHandler.dragProxy,
@@ -1623,32 +1622,38 @@ wxl.DataGrid.getCellName = function(td){
                     startTarget = startEvent.target,
                     targetPos,
                     target = event.getTarget(),
-                    targetParent = target.parentNode,
+                    targetParent,
                     targetIndex,
                     xy = event.getXY()
                 ;
                 switch(startEvent.cls){
                     case "wxl_row_mover":
-                        if (target.tagName === "DIV" && hasClass(target, "wxl_row_header")) {
-                            sourceIndex = startTarget.parentNode.parentNode.rowIndex;
-                            targetIndex = targetParent.parentNode.rowIndex;
-                            targetPos = position(targetParent);
-                            if ((xy.y - targetPos.top) >= (targetParent.clientHeight/2)) {
-                                targetIndex++;
-                            }
-                            dataGrid.moveRow(sourceIndex, targetIndex);
+                        if (target.tagName === "SPAN") target = target.parentNode;
+                        if (target.tagName !== "DIV") break;
+                        if (hasClass(target, "wxl_resize")) target = target.parentNode;
+                        if (!hasClass(target, "wxl_row_header")) break;
+                        targetParent = target.parentNode,
+                        sourceIndex = startTarget.parentNode.parentNode.rowIndex;
+                        targetIndex = targetParent.parentNode.rowIndex;
+                        targetPos = position(targetParent);
+                        if ((xy.y - targetPos.top) >= (targetParent.clientHeight/2)) {
+                            targetIndex++;
                         }
+                        dataGrid.moveRow(sourceIndex, targetIndex);
                         break;
                     case "wxl_column_mover":
-                        if (target.tagName === "DIV" && hasClass(target, "wxl_column_header")) {
-                            sourceIndex = startTarget.parentNode.cellIndex;
-                            targetIndex = targetParent.cellIndex;
-                            targetPos = position(targetParent);
-                            if ((xy.x - targetPos.left) >= (targetParent.clientWidth/2)) {
-                                targetIndex++;
-                            }
-                            dataGrid.moveColumn(sourceIndex, targetIndex);
+                        if (target.tagName === "SPAN") target = target.parentNode;
+                        if (target.tagName !== "DIV") break;
+                        if (hasClass(target, "wxl_resize")) target = target.parentNode;
+                        if (!hasClass(target, "wxl_column_header")) break;
+                        targetParent = target.parentNode,
+                        sourceIndex = startTarget.parentNode.cellIndex;
+                        targetIndex = targetParent.cellIndex;
+                        targetPos = position(targetParent);
+                        if ((xy.x - targetPos.left) >= (targetParent.clientWidth/2)) {
+                            targetIndex++;
                         }
+                        dataGrid.moveColumn(sourceIndex, targetIndex);
                         break;
                 }
                 dragProxy.className = "";
