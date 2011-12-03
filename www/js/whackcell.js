@@ -1985,7 +1985,7 @@ wxl.DataGrid.getCellName = function(td){
 };
 /***************************************************************
 *   
-*   FormulaTokenizer
+*   FormulaParser
 *
 ***************************************************************/
 (win["wxl"]["FormulaParser"] = function(config) {
@@ -2107,40 +2107,87 @@ wxl.DataGrid.getCellName = function(td){
             if (!item) continue;
             tokenType = tokenTypes[i];
             return {
-                type: tokenType,
+                type: tokenType.type,
+                tokenClass: tokenType,
                 groups: (groups = items.splice(i, tokenType.groups + 1)),
                 from: this.from,
                 to: (this.from += groups[0].length)
             };
         }
     },
-    forEachToken: function(text, callBack) {
-        var prevToken, token, length = text.length;
+    forEachToken: function(text, callBack, scope) {
+        var token, length = text.length, prevToken = {
+            type: this.tokens.lparen
+        };
+        if (!scope) scope = this;
+        if (callBack.call(scope, prevToken)===false) return;
         this.setText(text);
         do {
             token = this.nextToken();
-            if (token.type.type === "separator") continue;
+            if (token.type === "separator") continue;
             
             token.prevToken = prevToken;
             if (prevToken) prevToken.nextToken = token;
             prevToken = token;
             
-            if (callBack(token) === false) return;
+            if (callBack.call(scope, token) === false) return;
         } while (token.to < length);
+        token = {
+            type: this.tokens.rparen,
+            prevToken: prevToken
+        };
+        prevToken.next = token;
+        callBack.call(scope, token);
     },
     parse: function(text) {
-        var precedence, prevToken, prevPrecedence = 0, tokenType
+        var precedence, prevToken, prevPrecedence = 0, tokenClass
         this.forEachToken(text, function(token){
-            tokenType = token.type;
-            if (tokenType.type === "operand") return;
-            precedence = tokenType.precedence;
-            if (prevPrecedence >= precedence) this.reduce(prevToken, token);
+            if (token.type === "operand") return;
+            precedence = token.tokenClass.precedence;
+            while (prevPrecedence >= precedence) {
+                prevToken = this.reduce(prevToken);
+                prevPrecedence = prevToken.tokenClass.precedence;
+            }
             prevToken = token;
-            prevPrecedence = precedence;
-        });
+            prevPrecedence = prevToken.tokenClass.precedence;
+        }, this);
     },
-    reduce: function(prevToken, token) {
-        debugger;
+    reduce: function(token) {
+        var left, right, op, prevToken;
+        if (token.type==="binary" || token.type==="post") {
+            if (!(left = token.prevToken) 
+            ||   (left.type !== "operand")
+            ) throw "Missing left operand";
+            token.left = left;
+            token.prevToken = left.prevToken;
+            if (left.prevToken) left.prevToken.nextToken = token;
+            
+            if (token.type==="post") break;
+            
+            if (!(right = token.nextToken) 
+            ||   (right.type !== "operand")
+            ) throw "Missing right operand";
+        }
+        else
+        if (token.type==="left") {
+            if (!(op = token.nextToken)
+            ||   (op.type !== "operand")
+            ) throw "Missing operand";
+            token.op = op;
+            
+            if (!(right = op.nextToken)
+            ||   (right.type !== "rparen")
+            ) throw "Missing right parenthesis";
+        }
+        
+        if (token==="binary" || token.type==="left") {
+            token.right = right;
+            token.nextTopen = right.nextToken;
+            if (right.nextToken) right.nextToken.prevToken = token;
+        }
+        
+        token.type = "operand";
+        return token.prevToken;
     }
 };
 /***************************************************************
