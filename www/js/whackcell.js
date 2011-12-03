@@ -336,6 +336,11 @@ merge.OVERWRITE = 1;
 merge.DELETE_IF_NULL = 2;
 merge.DELETE = 4;
 
+function numGroups(regexp) {
+    if (regexp instanceof RegExp) regexp = regexp.source;
+    regexp = regexp.replace(/\\\(/g, "");
+    return regexp.length - regexp.replace(/\(/g, "").length;
+}
 /***************************************************************
 *   
 *   Event
@@ -1885,7 +1890,7 @@ wxl.DataGrid.getCellName = function(td){
         },
         {   //see https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date/parse
             //see http://www.w3.org/TR/NOTE-datetime and http://tools.ietf.org/html/rfc822#section-5
-            regexp: /(\d{2,4}[\/\.\-]\d{1,2}([\/\.\-]\d{1,2}(T\d\d:\d\d(:\d\d)?(Z|[+-]\d\d:\d\d))?)?)|(((Mon?|Tue?|Wed?|Thu?|Fri?|Sat?|Sun?),?\W*)?\d{1,2}\W*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\W*\d{1,4}(\W+\d\d:\d\d(:\d\d(\W+(UT|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|Z|A|M|N|Y|([+-]\W*\d{4})))?)?)?)/,
+            regexp: /(\d{2,4}[\/\.\-]\d{1,2}([\/\.\-]\d{1,2}(T\d\d:\d\d(:\d\d)?(Z|[+-]\d\d:\d\d))?)?)|(((Mon?|Tue?|Wed?|Thu?|Fri?|Sat?|Sun?),?\s*)?\d{1,2}\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*\d{1,4}(\s+\d\d:\d\d(:\d\d(\s+(UT|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|Z|A|M|N|Y|([+-]\s*\d{4})))?)?)?)/,
             parser: function(arr){
                 var ts = Date.parse(arr[0]),
                     obj = {}
@@ -1925,14 +1930,11 @@ wxl.DataGrid.getCellName = function(td){
         pattern = "";
         forIinA(this.patterns, function(i, a){
             var source, noLiteralParenthesis 
-            if (pattern.length) {
-                pattern += "|";
-            }
+            if (pattern.length) pattern += "|";
             source = a.regexp.source;
             groups += 1;
             a.startGroup = groups;
-            noLiteralParenthesis = source.replace(/\\\(/g, "");
-            groups += noLiteralParenthesis.length - noLiteralParenthesis.replace(/\(/g, "").length;
+            groups += numGroups(source);
             a.endGroup = groups + 1;
             pattern += "(" + source + ")";
         });
@@ -1979,6 +1981,166 @@ wxl.DataGrid.getCellName = function(td){
             };
         }
         return value;
+    }
+};
+/***************************************************************
+*   
+*   FormulaTokenizer
+*
+***************************************************************/
+(win["wxl"]["FormulaParser"] = function(config) {
+    this.config = config;
+    this.init();
+}).prototype = {
+    tokens: {
+        whitespace: {
+            patt: /\s+/,
+            type: "separator"
+        },
+        colon: {
+            patt: /:/,
+            type: "binary",
+            precedence: 90
+        },
+        union: {
+            patt: /[~,]/,
+            type: "binary",
+            precedence: 90
+        },
+        intersect: {
+            patt: /!/,
+            type: "binary",
+            precedence: 90
+        },
+        percent: {
+            patt: /%/,
+            type: "post",
+            precedence: 80
+        },
+        expop: {
+            patt: /\^/,
+            type: "binary",
+            precedence: 70
+        },
+        mulop: {
+            patt: /[\*\/]/,
+            type: "binary",
+            precedence: 60
+        },
+        addop: {
+            patt: /[+-]/,
+            type: "binary",
+            precedence: 50
+        },
+        concat: {
+            patt: /&/,
+            type: "binary",
+            precedence: 40
+        },
+        relop: {
+            patt: /<=|>=|<>|>|<|=/,
+            type: "binary",
+            precedence: 30
+        },
+        semicolon: {
+            patt: /;/,
+            type: "binary",
+            precedence: 20
+        },
+        lparen: {
+            patt: /\(/,
+            type: "left",
+            precedence: 10
+        },
+        rparen: {
+            patt: /\)/,
+            type: "right",
+            precedence: 10
+        },
+        number: {
+            patt: /[+-]?((((\d+)|(\d{1,3}(,\d{3})+))(\.\d*)?)|(\.\d+))([eE][+-]?\d+)?/,
+            type: "operand"
+        },
+        cell: {
+            patt: /(\$?[A-Za-z]+\$?\d+)|(R((\d*)|\[([+-]?\d+)\])C((\d*)|\[([+-]?\d+)\]))/,
+            type: "operand"
+        },
+        name: {
+            patt: /\w+/,
+            type: "operand"
+        }
+    },
+    init: function() {
+        var allTokens = "",
+            tokens = this.tokens,
+            tokenType, patt,
+            groups = 1,
+            tokenTypes = (this.tokenTypes = {})
+        ;
+        forPinO(tokens, function(name, tokenType){
+            if (allTokens.length) allTokens += "|";
+            patt = tokenType.patt.source;
+            groups += 1;
+            allTokens += "(" + patt + ")";
+            
+            tokenType.name = name;
+            tokenType.groups = numGroups(patt);
+            tokenTypes[String(groups)] = tokenType;
+            groups += tokenType.groups;
+        })
+        this.regexp = new RegExp("(" + allTokens + ")", "g");
+    },
+    setText: function(text){
+        this.text = text;
+        this.regexp.lastIndex = 0;
+        this.from = 0;
+    },
+    nextToken: function(){
+        var items = this.regexp.exec(this.text),
+            tokenTypes = this.tokenTypes,
+            item, i, tokenType, groups
+        ;
+        if (items === null) throw "Match Error";
+        for (i in tokenTypes) {
+            i = parseInt(i, 10);
+            item = items[i];
+            if (!item) continue;
+            tokenType = tokenTypes[i];
+            return {
+                type: tokenType,
+                groups: (groups = items.splice(i, tokenType.groups + 1)),
+                from: this.from,
+                to: (this.from += groups[0].length)
+            };
+        }
+    },
+    forEachToken: function(text, callBack) {
+        var prevToken, token, length = text.length;
+        this.setText(text);
+        do {
+            token = this.nextToken();
+            if (token.type.type === "separator") continue;
+            
+            token.prevToken = prevToken;
+            if (prevToken) prevToken.nextToken = token;
+            prevToken = token;
+            
+            if (callBack(token) === false) return;
+        } while (token.to < length);
+    },
+    parse: function(text) {
+        var precedence, prevToken, prevPrecedence = 0, tokenType
+        this.forEachToken(text, function(token){
+            tokenType = token.type;
+            if (tokenType.type === "operand") return;
+            precedence = tokenType.precedence;
+            if (prevPrecedence >= precedence) this.reduce(prevToken, token);
+            prevToken = token;
+            prevPrecedence = precedence;
+        });
+    },
+    reduce: function(prevToken, token) {
+        debugger;
     }
 };
 /***************************************************************
