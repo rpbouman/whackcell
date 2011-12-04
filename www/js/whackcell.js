@@ -2113,7 +2113,7 @@ wxl.DataGrid.getCellName = function(td){
             tokenType = tokenTypes[i];
             return {
                 type: tokenType.type,
-                tokenClass: tokenType,
+                tokenClass: tokenType.name,
                 groups: (groups = items.splice(i, tokenType.groups + 1)),
                 from: this.from,
                 to: (this.from += groups[0].length)
@@ -2128,7 +2128,7 @@ wxl.DataGrid.getCellName = function(td){
             length = text.length,
             prevToken = (firstToken = {
                 type: lparen.type,
-                tokenClass: lparen
+                tokenClass: lparen.name
             });
         this.setText(text);
         do {
@@ -2140,7 +2140,7 @@ wxl.DataGrid.getCellName = function(td){
         } while (token.to < length);
         token = {
             type: rparen.type,
-            tokenClass: rparen,
+            tokenClass: rparen.name,
             prevToken: prevToken
         };
         prevToken.nextToken = token;
@@ -2150,18 +2150,19 @@ wxl.DataGrid.getCellName = function(td){
         };
     },
     parse: function(text) {
-        var tokens, firstToken, lastToken, token, prevToken;
+        var tokenClasses = this.tokenClasses,
+            tokens, firstToken, lastToken, token, prevToken;
         tokens = this.tokenize(text);
         token = prevToken = firstToken = tokens.firstToken;
         lastToken = tokens.lastToken;
         outer: while (token = token.nextToken) {
             if (token.type === "operand") continue;
-            if (token.tokenClass.name === "addop" && token.prevToken.type !== "operand") {
+            if (token.tokenClass === "addop" && token.prevToken.type !== "operand") {
                 token.type = "pre";
-                token.tokenClass = this.tokenClasses["unaryaddop"];
+                token.tokenClass = "unaryaddop";
             }
             while (
-                (prevToken.tokenClass.precedence >= token.tokenClass.precedence)
+                (tokenClasses[prevToken.tokenClass].precedence >= tokenClasses[token.tokenClass].precedence)
             &&  (token.type !== "left" && token.type !== "pre")
             ) {
                 tokens = this.reduce(prevToken, token);
@@ -2194,7 +2195,7 @@ wxl.DataGrid.getCellName = function(td){
             delete op.type;
             
             if ((name = prevToken.prevToken)
-            && name.tokenClass.name === "name"
+            && name.tokenClass === "name"
             ) {
                 prevToken.name = name;
                 if (prevToken.prevToken = name.prevToken) {
