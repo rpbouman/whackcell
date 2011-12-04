@@ -2172,10 +2172,10 @@ wxl.DataGrid.getCellName = function(td){
             prevToken = token;
         };
         if (firstToken.right !== lastToken) throw "Parse exception";
-        return firstToken;
+        return firstToken.op;
     },
     reduce: function(prevToken, token) {
-        var type = prevToken.type, left, right, op;
+        var type = prevToken.type, left, right, op, name;
         if (type === "left") {
             if (!(op = prevToken.nextToken)
             || (op.type !== "operand")
@@ -2188,6 +2188,22 @@ wxl.DataGrid.getCellName = function(td){
             ) throw "Missing right parenthesis";
 
             token = right.nextToken;
+
+            delete op.nextToken;
+            delete op.prevToken;
+            delete op.type;
+            
+            if ((name = prevToken.prevToken)
+            && name.tokenClass.name === "name"
+            ) {
+                prevToken.name = name;
+                if (prevToken.prevToken = name.prevToken) {
+                    name.nextToken = prevToken;
+                }
+                delete name.nextToken;
+                delete name.prevToken;
+                delete name.type;
+            }
         }
         else {
             if (type !== "pre") {
@@ -2197,6 +2213,10 @@ wxl.DataGrid.getCellName = function(td){
                 prevToken.left = left;
                 prevToken.prevToken = left.prevToken;
                 if (left.prevToken) left.prevToken.nextToken = prevToken;
+                
+                delete left.nextToken;
+                delete left.prevToken;
+                delete left.type;
             }
             if (type !== "post"
             && (!(right = prevToken.nextToken) 
@@ -2208,6 +2228,10 @@ wxl.DataGrid.getCellName = function(td){
             prevToken.right = right;
             prevToken.nextToken = right.nextToken;
             if (right.nextToken) right.nextToken.prevToken = prevToken;
+            
+            delete right.nextToken;
+            delete right.prevToken;
+            delete right.type;
         }
         
         prevToken.type = "operand";
