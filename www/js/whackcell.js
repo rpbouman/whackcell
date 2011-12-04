@@ -2180,13 +2180,20 @@ wxl.DataGrid.getCellName = function(td){
         if (type === "left") {
             if (!(op = prevToken.nextToken)
             || (op.type !== "operand")
-            ) throw "Missing operand";
+            ) throw {
+                message: "Missing operand",
+                "operator": prevToken,
+                operand: op
+            };
             prevToken.op = op;
             
-
             if (!(right = op.nextToken)
             || (right.type !== "right")
-            ) throw "Missing right parenthesis";
+            ) throw {
+                message: "Missing right parenthesis",
+                "operator": prevToken,
+                operand: right
+            };
 
             token = right.nextToken;
 
@@ -2199,7 +2206,7 @@ wxl.DataGrid.getCellName = function(td){
             ) {
                 prevToken.name = name;
                 if (prevToken.prevToken = name.prevToken) {
-                    name.nextToken = prevToken;
+                    name.prevToken.nextToken = prevToken;
                 }
                 delete name.nextToken;
                 delete name.prevToken;
@@ -2210,7 +2217,11 @@ wxl.DataGrid.getCellName = function(td){
             if (type !== "pre") {
                 if (!(left = prevToken.prevToken) 
                 || (left.type !== "operand"))
-                throw "Missing left operand";
+                throw {
+                    message: "Missing left operand",
+                    "operator": prevToken,
+                    operand: left
+                }
                 prevToken.left = left;
                 prevToken.prevToken = left.prevToken;
                 if (left.prevToken) left.prevToken.nextToken = prevToken;
@@ -2222,7 +2233,11 @@ wxl.DataGrid.getCellName = function(td){
             if (type !== "post"
             && (!(right = prevToken.nextToken) 
             || (right.type !== "operand"))
-            ) throw "Missing right operand";
+            ) throw {
+                message: "Missing right operand",
+                "operator": prevToken,
+                operand: right
+            };
         }
         
         if (type !== "post") {
