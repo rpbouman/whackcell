@@ -1992,7 +1992,7 @@ wxl.DataGrid.getCellName = function(td){
     this.config = config;
     this.init();
 }).prototype = {
-    tokens: {
+    tokenClasses: {
         whitespace: {
             patt: /\s+/,
             type: "separator"
@@ -2072,21 +2072,21 @@ wxl.DataGrid.getCellName = function(td){
     },
     init: function() {
         var allTokens = "",
-            tokens = this.tokens,
-            tokenType, patt,
+            tokenClasses = this.tokenClasses,
+            tokenClass, patt,
             groups = 1,
             tokenTypes = (this.tokenTypes = {})
         ;
-        forPinO(tokens, function(name, tokenType){
+        forPinO(tokenClasses, function(name, tokenClass){
             if (allTokens.length) allTokens += "|";
-            patt = tokenType.patt.source;
+            patt = tokenClass.patt.source;
             groups += 1;
             allTokens += "(" + patt + ")";
             
-            tokenType.name = name;
-            tokenType.groups = numGroups(patt);
-            tokenTypes[String(groups)] = tokenType;
-            groups += tokenType.groups;
+            tokenClass.name = name;
+            tokenClass.groups = numGroups(patt);
+            tokenTypes[String(groups)] = tokenClass;
+            groups += tokenClass.groups;
         })
         this.regexp = new RegExp("(" + allTokens + ")", "g");
     },
@@ -2115,79 +2115,96 @@ wxl.DataGrid.getCellName = function(td){
             };
         }
     },
-    forEachToken: function(text, callBack, scope) {
-        var token, length = text.length, prevToken = {
-            type: this.tokens.lparen
-        };
-        if (!scope) scope = this;
-        if (callBack.call(scope, prevToken)===false) return;
+    tokenize: function(text) {
+        var tokenClasses = this.tokenClasses,
+            lparen = tokenClasses.lparen,
+            rparen = tokenClasses.rparen,
+            firstToken, token,
+            length = text.length,
+            prevToken = (firstToken = {
+                type: lparen.type,
+                tokenClass: lparen
+            });
         this.setText(text);
         do {
             token = this.nextToken();
             if (token.type === "separator") continue;
-            
             token.prevToken = prevToken;
-            if (prevToken) prevToken.nextToken = token;
+            prevToken.nextToken = token;
             prevToken = token;
-            
-            if (callBack.call(scope, token) === false) return;
         } while (token.to < length);
         token = {
-            type: this.tokens.rparen,
+            type: rparen.type,
+            tokenClass: rparen,
             prevToken: prevToken
         };
-        prevToken.next = token;
-        callBack.call(scope, token);
+        prevToken.nextToken = token;
+        return {
+            firstToken: firstToken,
+            lastToken: token
+        };
     },
     parse: function(text) {
-        var precedence, prevToken, prevPrecedence = 0, tokenClass
-        this.forEachToken(text, function(token){
-            if (token.type === "operand") return;
-            precedence = token.tokenClass.precedence;
-            while (prevPrecedence >= precedence) {
-                prevToken = this.reduce(prevToken);
-                prevPrecedence = prevToken.tokenClass.precedence;
-            }
+        var tokens, firstToken, lastToken, token, prevToken;
+        tokens = this.tokenize(text);
+        token = prevToken = firstToken = tokens.firstToken;
+        lastToken = tokens.lastToken;
+        outer: while (token = token.nextToken) {
+            if (token.type === "operand") continue;
+            while (
+                (prevToken.tokenClass.precedence >= token.tokenClass.precedence)
+            &&  !(prevToken.type==="left" && token.type==="left")
+            ) {
+                tokens = this.reduce(prevToken, token);
+                token = tokens.token;
+                prevToken = tokens.prevToken;
+                if (! (token && prevToken) ) break outer;
+            };
             prevToken = token;
-            prevPrecedence = prevToken.tokenClass.precedence;
-        }, this);
+        };
+        if (!firstToken.right===lastToken) throw "Parse exception";
+        return firstToken;
     },
-    reduce: function(token) {
-        var left, right, op, prevToken;
-        if (token.type==="binary" || token.type==="post") {
-            if (!(left = token.prevToken) 
-            ||   (left.type !== "operand")
+    reduce: function(prevToken, token) {
+        var type = prevToken.type, left, right, op;
+        if (type==="binary" || type==="post") {
+            if (!(left = prevToken.prevToken) 
+            || (left.type !== "operand")
             ) throw "Missing left operand";
-            token.left = left;
-            token.prevToken = left.prevToken;
-            if (left.prevToken) left.prevToken.nextToken = token;
-            
-            if (token.type==="post") break;
-            
-            if (!(right = token.nextToken) 
-            ||   (right.type !== "operand")
+            prevToken.left = left;
+            prevToken.prevToken = left.prevToken;
+            if (left.prevToken) left.prevToken.nextToken = prevToken;
+            if (type==="binary"
+            && (!(right = prevToken.nextToken) 
+            || (right.type !== "operand"))
             ) throw "Missing right operand";
         }
         else
-        if (token.type==="left") {
-            if (!(op = token.nextToken)
-            ||   (op.type !== "operand")
+        if (type==="left") {
+            if (!(op = prevToken.nextToken)
+            || (op.type !== "operand")
             ) throw "Missing operand";
-            token.op = op;
+            prevToken.op = op;
             
             if (!(right = op.nextToken)
-            ||   (right.type !== "rparen")
+            || (right.type !== "right")
             ) throw "Missing right parenthesis";
+
+            token = right.nextToken;
+        }
+        else throw "Invalid operator";
+        
+        if (type==="binary" || type==="left") {
+            prevToken.right = right;
+            prevToken.nextToken = right.nextToken;
+            if (right.nextToken) right.nextToken.prevToken = prevToken;
         }
         
-        if (token==="binary" || token.type==="left") {
-            token.right = right;
-            token.nextTopen = right.nextToken;
-            if (right.nextToken) right.nextToken.prevToken = token;
-        }
-        
-        token.type = "operand";
-        return token.prevToken;
+        prevToken.type = "operand";
+        return {
+            prevToken: prevToken.prevToken,
+            token: token
+        };
     }
 };
 /***************************************************************
