@@ -2017,6 +2017,10 @@ wxl.DataGrid.getCellName = function(td){
             type: "post",
             precedence: 80
         },
+        unaryaddop: {
+            type: "pre",
+            precedence: 80
+        }, 
         expop: {
             patt: /\^/,
             type: "binary",
@@ -2078,12 +2082,13 @@ wxl.DataGrid.getCellName = function(td){
             tokenTypes = (this.tokenTypes = {})
         ;
         forPinO(tokenClasses, function(name, tokenClass){
+            tokenClass.name = name;
+            if (!tokenClass.patt) return;
             if (allTokens.length) allTokens += "|";
             patt = tokenClass.patt.source;
             groups += 1;
             allTokens += "(" + patt + ")";
             
-            tokenClass.name = name;
             tokenClass.groups = numGroups(patt);
             tokenTypes[String(groups)] = tokenClass;
             groups += tokenClass.groups;
@@ -2151,50 +2156,55 @@ wxl.DataGrid.getCellName = function(td){
         lastToken = tokens.lastToken;
         outer: while (token = token.nextToken) {
             if (token.type === "operand") continue;
+            if (token.tokenClass.name === "addop" && token.prevToken.type !== "operand") {
+                token.type = "pre";
+                token.tokenClass = this.tokenClasses["unaryaddop"];
+            }
             while (
                 (prevToken.tokenClass.precedence >= token.tokenClass.precedence)
-            &&  !(prevToken.type==="left" && token.type==="left")
+            &&  (token.type !== "left" && token.type !== "pre")
             ) {
                 tokens = this.reduce(prevToken, token);
                 token = tokens.token;
                 prevToken = tokens.prevToken;
-                if (! (token && prevToken) ) break outer;
+                if (!(token && prevToken)) break outer;
             };
             prevToken = token;
         };
-        if (!firstToken.right===lastToken) throw "Parse exception";
+        if (firstToken.right !== lastToken) throw "Parse exception";
         return firstToken;
     },
     reduce: function(prevToken, token) {
         var type = prevToken.type, left, right, op;
-        if (type==="binary" || type==="post") {
-            if (!(left = prevToken.prevToken) 
-            || (left.type !== "operand")
-            ) throw "Missing left operand";
-            prevToken.left = left;
-            prevToken.prevToken = left.prevToken;
-            if (left.prevToken) left.prevToken.nextToken = prevToken;
-            if (type==="binary"
-            && (!(right = prevToken.nextToken) 
-            || (right.type !== "operand"))
-            ) throw "Missing right operand";
-        }
-        else
-        if (type==="left") {
+        if (type === "left") {
             if (!(op = prevToken.nextToken)
             || (op.type !== "operand")
             ) throw "Missing operand";
             prevToken.op = op;
             
+
             if (!(right = op.nextToken)
             || (right.type !== "right")
             ) throw "Missing right parenthesis";
 
             token = right.nextToken;
         }
-        else throw "Invalid operator";
+        else {
+            if (type !== "pre") {
+                if (!(left = prevToken.prevToken) 
+                || (left.type !== "operand"))
+                throw "Missing left operand";
+                prevToken.left = left;
+                prevToken.prevToken = left.prevToken;
+                if (left.prevToken) left.prevToken.nextToken = prevToken;
+            }
+            if (type !== "post"
+            && (!(right = prevToken.nextToken) 
+            || (right.type !== "operand"))
+            ) throw "Missing right operand";
+        }
         
-        if (type==="binary" || type==="left") {
+        if (type !== "post") {
             prevToken.right = right;
             prevToken.nextToken = right.nextToken;
             if (right.nextToken) right.nextToken.prevToken = prevToken;
