@@ -13,9 +13,16 @@
                 numDisplayCols: 26,
             });
             var parser = new wxl.FormulaParser();
+            var result;
             debugger;
-            var parseTree;
-            parseTree = parser.parse("-abs(a1)-+b1");
+            try {
+                result = parser.parse("(-true() + 1) * 8");
+            }
+            catch (exception) {
+                debugger;
+                result = exception;
+            }
+            console.log(JSON.stringify(result, 2));
         </script>
     </body>
 </html>

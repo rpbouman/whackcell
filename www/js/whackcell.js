@@ -74,6 +74,13 @@ function forIinA(a, f, scope){
     return true;
 }
 
+function del(){
+    var o = arguments[0];
+    for (var i=1, n = arguments.length; i < n; i++){
+        delete o[arguments[i]];
+    }
+}
+
 function free(o) {
     var p;
     for (p in o) {
@@ -1997,46 +2004,46 @@ wxl.DataGrid.getCellName = function(td){
             patt: /\s+/,
             type: "separator"
         },
-        colon: {
+        ":": {
             patt: /:/,
             type: "binary",
             precedence: 90
         },
-        union: {
-            patt: /[~,]/,
+        "~": {
+            patt: /~/,
             type: "binary",
             precedence: 90
         },
-        intersect: {
+        "!": {
             patt: /!/,
             type: "binary",
             precedence: 90
         },
-        percent: {
+        "%": {
             patt: /%/,
             type: "post",
             precedence: 80
         },
-        unaryaddop: {
+        "unop": {
             type: "pre",
             precedence: 80
         }, 
-        expop: {
+        "^": {
             patt: /\^/,
             type: "binary",
             precedence: 70
         },
-        mulop: {
+        "[*\/]": {
             patt: /[\*\/]/,
             type: "binary",
             precedence: 60
         },
-        addop: {
+        "[+-]": {
             patt: /[+-]/,
             type: "binary",
             precedence: 50
         },
-        concat: {
+        "&": {
             patt: /&/,
             type: "binary",
             precedence: 40
@@ -2046,23 +2053,27 @@ wxl.DataGrid.getCellName = function(td){
             type: "binary",
             precedence: 30
         },
-        semicolon: {
-            patt: /;/,
+        "[,;]": {
+            patt: /[,;]/,
             type: "binary",
             precedence: 20
         },
-        lparen: {
+        "(": {
             patt: /\(/,
             type: "left",
             precedence: 10
         },
-        rparen: {
+        ")": {
             patt: /\)/,
             type: "right",
             precedence: 10
         },
-        number: {
+        num: {
             patt: /[+-]?((((\d+)|(\d{1,3}(,\d{3})+))(\.\d*)?)|(\.\d+))([eE][+-]?\d+)?/,
+            type: "operand"
+        },
+        str: {
+            patt: /"([^"]|"")*"/,
             type: "operand"
         },
         cell: {
@@ -2113,34 +2124,49 @@ wxl.DataGrid.getCellName = function(td){
             tokenType = tokenTypes[i];
             return {
                 type: tokenType.type,
-                tokenClass: tokenType.name,
+                c: tokenType.name,
                 groups: (groups = items.splice(i, tokenType.groups + 1)),
-                from: this.from,
-                to: (this.from += groups[0].length)
+                f: this.from,
+                t: (this.from += groups[0].length)
             };
         }
     },
     tokenize: function(text) {
         var tokenClasses = this.tokenClasses,
-            lparen = tokenClasses.lparen,
-            rparen = tokenClasses.rparen,
+            lparen = tokenClasses["("],
+            rparen = tokenClasses[")"],
             firstToken, token,
             length = text.length,
             prevToken = (firstToken = {
                 type: lparen.type,
-                tokenClass: lparen.name
+                c: lparen.name
             });
         this.setText(text);
         do {
             token = this.nextToken();
             if (token.type === "separator") continue;
+            switch (token.c) {
+                case "str":
+                    token.v = token.groups[2].replace(/""/, "\"");
+                    break;
+                case "num":
+                    token.v = Number(token.groups[0].replace(/,/, ""))
+                    break;
+                case "cell":
+                    break;
+                default:
+                    token.n = token.groups[0];
+            }; 
+            if (!isUnd(token.v) || token.type!=="operand") {
+                delete token.groups;
+            }
             token.prevToken = prevToken;
             prevToken.nextToken = token;
             prevToken = token;
-        } while (token.to < length);
+        } while (token.t < length);
         token = {
             type: rparen.type,
-            tokenClass: rparen.name,
+            c: rparen.name,
             prevToken: prevToken
         };
         prevToken.nextToken = token;
@@ -2157,12 +2183,12 @@ wxl.DataGrid.getCellName = function(td){
         lastToken = tokens.lastToken;
         outer: while (token = token.nextToken) {
             if (token.type === "operand") continue;
-            if (token.tokenClass === "addop" && token.prevToken.type !== "operand") {
+            if (token.c === "[+-]" && token.prevToken.type !== "operand") {
                 token.type = "pre";
-                token.tokenClass = "unaryaddop";
+                token.c = "unop";
             }
             while (
-                (tokenClasses[prevToken.tokenClass].precedence >= tokenClasses[token.tokenClass].precedence)
+                (tokenClasses[prevToken.c].precedence >= tokenClasses[token.c].precedence)
             &&  (token.type !== "left" && token.type !== "pre")
             ) {
                 tokens = this.reduce(prevToken, token);
@@ -2172,84 +2198,99 @@ wxl.DataGrid.getCellName = function(td){
             };
             prevToken = token;
         };
-        if (firstToken.right !== lastToken) throw "Parse exception";
-        return firstToken.op;
+        if (firstToken.r !== lastToken) {
+            this.throwException("Parse exception", null, null);
+        }
+        return firstToken.a;
     },
+    throwException: function(message, oprtr, oprnd){
+        throw {
+            text: this.text,
+            message: message,
+            "operator": {
+                from: oprtr.f,
+                to: oprtr.t
+            },
+            operand: {
+                from: oprnd.f,
+                to: oprnd.t
+            }
+        }
+    }, 
     reduce: function(prevToken, token) {
-        var type = prevToken.type, left, right, op, name;
-        if (type === "left") {
-            if (!(op = prevToken.nextToken)
-            || (op.type !== "operand")
-            ) throw {
-                message: "Missing operand",
-                "operator": prevToken,
-                operand: op
-            };
-            prevToken.op = op;
-            
-            if (!(right = op.nextToken)
-            || (right.type !== "right")
-            ) throw {
-                message: "Missing right parenthesis",
-                "operator": prevToken,
-                operand: right
-            };
-
-            token = right.nextToken;
-
-            delete op.nextToken;
-            delete op.prevToken;
-            delete op.type;
-            
-            if ((name = prevToken.prevToken)
-            && name.tokenClass === "name"
-            ) {
-                prevToken.name = name;
+        var type = prevToken.type, left, right, arg, args, name;
+        if (type === "left") {          //left parenthesis
+            arg = prevToken.nextToken;
+                        
+            if ((name = prevToken.prevToken) && name.c === "name") {    //name precedes left parenthesis: this is a function
+                prevToken.c = "func";
+                prevToken.n = name.groups[0].toUpperCase();
+                prevToken.f = name.f;
                 if (prevToken.prevToken = name.prevToken) {
                     name.prevToken.nextToken = prevToken;
                 }
-                delete name.nextToken;
-                delete name.prevToken;
-                delete name.type;
+                del(name, "nextToken", "prevToken", "type", "f", "t", "c");
+                
+                args = prevToken.a = [];
+                if (arg && arg.type === "operand") {        //unwrap arguments tree to arguments list.
+                    while (arg.c === "[,;]") {
+                        args.unshift(arg.r);
+                        arg = arg.l;
+                    }
+                    if (arg) args.unshift(arg);
+                }
+                else {                                      //no arguments, reset so we can find the right parenthesis.
+                    right = arg;
+                }
             }
+            else 
+            if ((!arg) || (arg.type !== "operand")) {       //not a function. In this case, parenthesis cannot be empty
+                this.throwException("Missing operand", prevToken, operand);
+            }
+            else {                                          //parenthesis not empty, store contents.
+                prevToken.a = arg;
+                right = arg.nextToken;
+                del(arg, "nextToken", "prevToken", "type", "f", "t", "c");
+            }
+
+            if ((!right) || (right.type !== "right")) {
+                this.throwException("Missing right parenthesis", prevToken, right);
+            }
+            token = right.nextToken;            
         }
         else {
             if (type !== "pre") {
-                if (!(left = prevToken.prevToken) 
-                || (left.type !== "operand"))
-                throw {
-                    message: "Missing left operand",
-                    "operator": prevToken,
-                    operand: left
+                if (!(left = prevToken.prevToken) || (left.type !== "operand")) {
+                    this.throwException("Missing left operand", prevToken, left);
                 }
-                prevToken.left = left;
+                prevToken.l = left;
                 prevToken.prevToken = left.prevToken;
                 if (left.prevToken) left.prevToken.nextToken = prevToken;
-                
-                delete left.nextToken;
-                delete left.prevToken;
-                delete left.type;
+
+                del(left, "nextToken", "prevToken", "type", "f", "t", "c");
             }
-            if (type !== "post"
-            && (!(right = prevToken.nextToken) 
-            || (right.type !== "operand"))
-            ) throw {
-                message: "Missing right operand",
-                "operator": prevToken,
-                operand: right
-            };
+            if (type !== "post" && (!(right = prevToken.nextToken) || (right.type !== "operand"))) {
+                this.throwException("Missing right operand", prevToken, right);
+            }
         }
         
         if (type !== "post") {
-            prevToken.right = right;
+            if (type === "left") {
+                if (prevToken.prevToken) {  //left parentheses spans string up to closing right parentheses
+                    prevToken.t = right.t;
+                }
+                else {                      //for outmost left parentheses, store the closing right parentheses (checksum)
+                    prevToken.r = right;
+                }
+            }
+            else {                          //binary and prefix operators store the right argument
+                prevToken.r = right;
+            }
             prevToken.nextToken = right.nextToken;
             if (right.nextToken) right.nextToken.prevToken = prevToken;
             
-            delete right.nextToken;
-            delete right.prevToken;
-            delete right.type;
+            del(right, "nextToken", "prevToken", "type", "f", "t", "c");
         }
-        
         prevToken.type = "operand";
         return {
             prevToken: prevToken.prevToken,
