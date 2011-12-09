@@ -12,17 +12,6 @@
                 numDisplayRows: 26,
                 numDisplayCols: 26,
             });
-            var parser = new wxl.FormulaParser();
-            var result;
-            debugger;
-            try {
-                result = parser.parse("(-true() + 1) * 8");
-            }
-            catch (exception) {
-                debugger;
-                result = exception;
-            }
-            console.log(JSON.stringify(result, 2));
         </script>
     </body>
 </html>

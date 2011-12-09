@@ -674,7 +674,12 @@ var KBHandler;
         });
     },
     focus: function() {
-        this.textArea.focus();
+        if (this.fireEvent("focus")) {;
+            this.textArea.focus();
+        }
+        else {
+            return false;
+        }
     }
 }, Observable.prototype);
 
@@ -865,7 +870,7 @@ win["wxl"] = {};
             lastRowIndex = end.row,
             colIndex, 
             lastColIndex = end.col,
-            rows = config.spreadsheet.getRows(), 
+            rows = config.dataGrid.getRows(), 
             row, cell
         ;
         if (!scope) {
@@ -882,12 +887,12 @@ win["wxl"] = {};
     },
     allRows: function(){
         return  this.start.row===1 &&
-                this.end.row === this.config.spreadsheet.numRows
+                this.end.row === this.config.dataGrid.numRows
         ;
     },
     allCols: function(){
         return  this.start.col===1 &&
-                this.end.col === this.config.spreadsheet.numCols
+                this.end.col === this.config.dataGrid.numCols
         ;
     }
 };
@@ -1027,7 +1032,7 @@ win["wxl"] = {};
     },
     createRange: function(startRow, startCol, endRow, endCol){
         return new wxl.Range({
-            spreadsheet: this,
+            dataGrid: this,
             start: {
                 row: startRow,
                 col: startCol
@@ -1186,7 +1191,12 @@ win["wxl"] = {};
             className = target.className,
             parentNode
         ;
-        this.kbHandler.focus();
+        if (this.kbHandler.focus()===false) {
+            if (this.cellEditor) {
+                this.cellEditor.focus();
+            }
+            return false;
+        }
         tagname: switch (target.tagName) { 
             case "SPAN":
                 parentNode = target.parentNode;
@@ -1257,7 +1267,8 @@ wxl.DataGrid.getColumnIndex = function(address) {
         col = address;
     }
     else
-    if (/[A-Z]+/.test(address)) {
+    if (/^[A-Z]+$/i.test(address)) {
+        address = address.toUpperCase();
         var i, n = address.length-1, col = 0;
         for (i=n; i >= 0; i--) {
             col += (address.charCodeAt(i) - 64);
@@ -1688,8 +1699,11 @@ wxl.DataGrid.getCellName = function(td){
     this.render();
 }).prototype = {
     initDataGrid: function(dataGrid){
+        dataGrid.cellEditor = this;
         dataGrid.listen("cellactivated", this.cellActivated, this);
-        dataGrid.getKBHandler().listen("keydown", this.dataGridKeyDownHandler, this);
+        var kbHandler = dataGrid.getKBHandler();
+        kbHandler.listen("keydown", this.dataGridKeyDownHandler, this);
+        kbHandler.listen("focus", this.dataGridFocusHandler, this);
     },
     render: function() {
         var me = this,
@@ -1736,6 +1750,7 @@ wxl.DataGrid.getCellName = function(td){
             cell = this.cell,
             textarea = this.textarea
         ;
+        if (!cell) return true;
         try {
             dataGrid.setCellContent(cell, textarea.value);
             removeClass(textarea, "wxl_active");
@@ -1750,6 +1765,9 @@ wxl.DataGrid.getCellName = function(td){
             stopEditing = false;
         }
         return stopEditing;
+    },
+    dataGridFocusHandler: function(kbHandler, type, event){
+        return this.stopEditing();
     },
     dataGridKeyDownHandler: function(kbHandler, type, event){
         var keyCode = event.getKeyCode();
@@ -1870,62 +1888,49 @@ wxl.DataGrid.getCellName = function(td){
 ***************************************************************/
 (win["wxl"]["CellValues"] = function(config) {
     this.config = config;
+    this.patterns = win.wxl.CellValues.prototype.patterns;
+    if (config.patterns) this.patterns = this.patterns.concat(config.patterns);
     this.init();
 }).prototype = {
-    patterns: [
-        {
-            regexp: /'(.+)/,
-            parser: function(arr){
-                return {
-                    value: arr[0].substr(1)
-                };
-            },
-            toText: function(value){
-                return value;
-            }
+    patterns: [{
+        regexp: /'(.+)/,
+        parser: function(arr){
+            return {
+                value: arr[0].substr(1)
+            };
         },
-        {
-            regexp: /=(.+)/,
-            parser: function(arr){
-                return {
-                    error: "Not yet implemented"
-                };
-            },
-            toText: function(value) {
-                return value;
-            }
-        },
-        {   //see https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date/parse
-            //see http://www.w3.org/TR/NOTE-datetime and http://tools.ietf.org/html/rfc822#section-5
-            regexp: /(\d{2,4}[\/\.\-]\d{1,2}([\/\.\-]\d{1,2}(T\d\d:\d\d(:\d\d)?(Z|[+-]\d\d:\d\d))?)?)|(((Mon?|Tue?|Wed?|Thu?|Fri?|Sat?|Sun?),?\s*)?\d{1,2}\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*\d{1,4}(\s+\d\d:\d\d(:\d\d(\s+(UT|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|Z|A|M|N|Y|([+-]\s*\d{4})))?)?)?)/,
-            parser: function(arr){
-                var ts = Date.parse(arr[0]),
-                    obj = {}
-                ;
-                if (isNaN(ts)) {
-                    obj.error = "Invalid date";
-                }
-                else {
-                    obj.value = new Date(ts);
-                }
-                return obj;
-            },
-            toText: function(value) {
-                return value.toString();
-            }
-        },
-        {
-            regexp: /[+-]?((((\d+)|(\d{1,3}(,\d{3})+))(\.\d*)?)|(\.\d+))([eE][+-]?\d+)?/,
-            parser: function(arr){
-                return {
-                    value: Number(arr[0].replace(",", ""))
-                };
-            },
-            toText: function(value) {
-                return String(value);
-            }
+        toText: function(value){
+            return value;
         }
-    ],
+    },  {   //see https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date/parse
+        //see http://www.w3.org/TR/NOTE-datetime and http://tools.ietf.org/html/rfc822#section-5
+        regexp: /(\d{2,4}[\/\.\-]\d{1,2}([\/\.\-]\d{1,2}(T\d\d:\d\d(:\d\d)?(Z|[+-]\d\d:\d\d))?)?)|(((Mon?|Tue?|Wed?|Thu?|Fri?|Sat?|Sun?),?\s*)?\d{1,2}\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*\d{1,4}(\s+\d\d:\d\d(:\d\d(\s+(UT|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|Z|A|M|N|Y|([+-]\s*\d{4})))?)?)?)/,
+        parser: function(arr){
+            var ts = Date.parse(arr[0]),
+                obj = {}
+            ;
+            if (isNaN(ts)) {
+                obj.error = "Invalid date";
+            }
+            else {
+                obj.value = new Date(ts);
+            }
+            return obj;
+        },
+        toText: function(value) {
+            return value.toString();
+        }
+    },  {
+        regexp: /[+-]?((((\d+)|(\d{1,3}(,\d{3})+))(\.\d*)?)|(\.\d+))([eE][+-]?\d+)?/,
+        parser: function(arr){
+            return {
+                value: Number(arr[0].replace(",", ""))
+            };
+        },
+        toText: function(value) {
+            return String(value);
+        }
+    }],
     init: function() {
         var config = this.config,
             dataGrid = config.dataGrid,
@@ -1934,6 +1939,7 @@ wxl.DataGrid.getCellName = function(td){
         dataGrid.valueHelper = this;
         dataGrid.setCellContent = this.setCellContent;
         dataGrid.getCellContent = this.getCellContent;
+        dataGrid.getCellValue = this.getCellValue;
         pattern = "";
         forIinA(this.patterns, function(i, a){
             var source, noLiteralParenthesis 
@@ -1952,34 +1958,38 @@ wxl.DataGrid.getCellName = function(td){
     },
     setCellContent: function(cell, content) {
         var valueHelper = this.valueHelper,
-            obj = valueHelper.parse(content),
-            value
+            obj = valueHelper.parse(content, cell),
+            value = obj.value
         ;
         if (obj.error) {
             throw obj.error;
         }
         _sAtt(cell, "data-content", content);
-        if (obj.type) {
-            value = obj.type.toText(obj.value);
-        }
-        else {
-            value = obj.value;
-        }
+        cell.value = value;
+        if (obj.type) value = obj.type.toText(value);
         free(obj);
         this.setCellText(cell, value);
     },
+    getCellValue: function(cell) {
+        var value = cell.value;
+        if (isUnd(value)) {
+            value = wxl.CellValues.prototype.getCellContent(cell);
+        }
+        return value;
+    },
     getCellContent: function(cell) {
         var content = _gAtt(cell, "data-content");
-        return (content===null) ?  this.getCellText(cell) : content;
+        return (content === null) ?  wxl.DataGrid.prototype.getCellText(cell) : content;
     },
-    parse: function(text){
+    parse: function(text, cell){
         var items = this.regexp.exec(text), value;
         if (!items) return {
             value: text
         };
         if(forIinA(this.patterns, function(i, a){
             if (items[a.startGroup]!==text) return;
-            value = a.parser(items.slice(a.startGroup, a.endGroup));
+            value = a.parser(items.slice(a.startGroup, a.endGroup), cell);
+            cell.value = value;
             value.type = a;
             return false;
         })) {
@@ -2007,66 +2017,81 @@ wxl.DataGrid.getCellName = function(td){
         ":": {
             patt: /:/,
             type: "binary",
-            precedence: 90
+            precedence: 90,
+            semantics: "Range($l,$r)"
         },
         "~": {
             patt: /~/,
             type: "binary",
-            precedence: 90
+            precedence: 90,
+            semantics: "Intersect($l,$r)"
         },
         "!": {
             patt: /!/,
             type: "binary",
-            precedence: 90
+            precedence: 90,
+            semantics: "Union($l,$r)"
         },
         "%": {
             patt: /%/,
             type: "post",
-            precedence: 80
+            precedence: 80,
+            semantics: "($l/100)"
         },
         "unop": {
             type: "pre",
-            precedence: 80
+            precedence: 80,
+            semantics: "$n$r"
         }, 
         "^": {
             patt: /\^/,
             type: "binary",
-            precedence: 70
+            precedence: 70,
+            semantics: "$l$n$r"
         },
         "[*\/]": {
             patt: /[\*\/]/,
             type: "binary",
-            precedence: 60
+            precedence: 60,
+            semantics: "$l$n$r"
         },
         "[+-]": {
             patt: /[+-]/,
             type: "binary",
-            precedence: 50
+            precedence: 50,
+            semantics: "$l$n$r"
         },
         "&": {
             patt: /&/,
             type: "binary",
-            precedence: 40
+            precedence: 40,
+            semantics: "String($l)+String($r)"
         },
         relop: {
             patt: /<=|>=|<>|>|<|=/,
             type: "binary",
-            precedence: 30
+            precedence: 30,
+            semantics: "$l$n$r"
         },
         "[,;]": {
             patt: /[,;]/,
             type: "binary",
-            precedence: 20
+            precedence: 20,
+            semantics: "$l,$r"
         },
         "(": {
             patt: /\(/,
             type: "left",
-            precedence: 10
+            precedence: 10,
+            semantics: "($a)"
         },
         ")": {
             patt: /\)/,
             type: "right",
             precedence: 10
+        },
+        func: {
+            semantics: "$n($a)"
         },
         num: {
             patt: /[+-]?((((\d+)|(\d{1,3}(,\d{3})+))(\.\d*)?)|(\.\d+))([eE][+-]?\d+)?/,
@@ -2077,7 +2102,7 @@ wxl.DataGrid.getCellName = function(td){
             type: "operand"
         },
         cell: {
-            patt: /(\$?[A-Za-z]+\$?\d+)|(R((\d*)|\[([+-]?\d+)\])C((\d*)|\[([+-]?\d+)\]))/,
+            patt: /(([Rr]((\[([+-]?\d+)\]|\d*)))([Cc](\[([+-]?\d+)\]|(\d*))))|(((\$)?([A-Za-z]+))((\$)?(\d+)))/,
             type: "operand"
         },
         name: {
@@ -2137,6 +2162,7 @@ wxl.DataGrid.getCellName = function(td){
             rparen = tokenClasses[")"],
             firstToken, token,
             length = text.length,
+            groups,
             prevToken = (firstToken = {
                 type: lparen.type,
                 c: lparen.name
@@ -2144,21 +2170,35 @@ wxl.DataGrid.getCellName = function(td){
         this.setText(text);
         do {
             token = this.nextToken();
+            groups = token.groups;
             if (token.type === "separator") continue;
             switch (token.c) {
                 case "str":
-                    token.v = token.groups[2].replace(/""/, "\"");
+                    token.v = groups[2].replace(/""/, "\"");
                     break;
                 case "num":
-                    token.v = Number(token.groups[0].replace(/,/, ""))
+                    token.v = Number(groups[0].replace(/,/, ""))
                     break;
                 case "cell":
+                    if (groups[1]) {
+                        token.format = "R1C1";
+                        if (groups[5]) token.colInc = parseInt(groups[5], 10);
+                        if (groups[8]) token.rowInc = parseInt(groups[8], 10);
+                    }
+                    else 
+                    if (groups[10]){
+                        token.format = "A1";
+                        token.fixedCol = (groups[12] ? true : false);
+                        token.col = wxl.DataGrid.getColumnIndex(groups[11]);
+                        token.fixedRow = (groups[15] ? true : false);
+                        token.row = parseInt(groups[16], 10);
+                    }
                     break;
                 default:
-                    token.n = token.groups[0];
+                    token.n = groups[0];
             }; 
-            if (!isUnd(token.v) || token.type!=="operand") {
-                delete token.groups;
+            if (!isUnd(token.v) || token.type !== "operand") {
+                delete groups;
             }
             token.prevToken = prevToken;
             prevToken.nextToken = token;
@@ -2229,7 +2269,7 @@ wxl.DataGrid.getCellName = function(td){
                 if (prevToken.prevToken = name.prevToken) {
                     name.prevToken.nextToken = prevToken;
                 }
-                del(name, "nextToken", "prevToken", "type", "f", "t", "c");
+                del(name, "nextToken", "prevToken", "type", "f", "t");
                 
                 args = prevToken.a = [];
                 if (arg && arg.type === "operand") {        //unwrap arguments tree to arguments list.
@@ -2250,7 +2290,7 @@ wxl.DataGrid.getCellName = function(td){
             else {                                          //parenthesis not empty, store contents.
                 prevToken.a = arg;
                 right = arg.nextToken;
-                del(arg, "nextToken", "prevToken", "type", "f", "t", "c");
+                del(arg, "nextToken", "prevToken", "type", "f", "t");
             }
 
             if ((!right) || (right.type !== "right")) {
@@ -2267,7 +2307,7 @@ wxl.DataGrid.getCellName = function(td){
                 prevToken.prevToken = left.prevToken;
                 if (left.prevToken) left.prevToken.nextToken = prevToken;
 
-                del(left, "nextToken", "prevToken", "type", "f", "t", "c");
+                del(left, "nextToken", "prevToken", "type", "f", "t");
             }
             if (type !== "post" && (!(right = prevToken.nextToken) || (right.type !== "operand"))) {
                 this.throwException("Missing right operand", prevToken, right);
@@ -2289,13 +2329,160 @@ wxl.DataGrid.getCellName = function(td){
             prevToken.nextToken = right.nextToken;
             if (right.nextToken) right.nextToken.prevToken = prevToken;
             
-            del(right, "nextToken", "prevToken", "type", "f", "t", "c");
+            del(right, "nextToken", "prevToken", "type", "f", "t");
         }
         prevToken.type = "operand";
         return {
             prevToken: prevToken.prevToken,
             token: token
         };
+    }
+};
+/***************************************************************
+*   
+*   FormulaSupport
+*
+***************************************************************/
+(win["wxl"]["FormulaSupport"] = function(config) {
+    this.config = config;
+    this.init();
+    this.formulas = {
+        //map:
+        //key = canonical formula text
+        //value = generated id
+    };
+    this.functions = {
+        //maps:
+        //key = formula id (values in formulas map)
+        //value = compiled formula (function)
+    };
+}).prototype = {
+    init: function() {
+        this.parser = new wxl.FormulaParser();
+    },
+    calculate: function(cell) {
+        var rows, row, args = [], i, n, id, params, param, paramCell, formula = _gAtt(cell, "data-formula");
+        if (!formula) throw "Not a formula";
+        formula = JSON.parse(formula);
+        if (params = formula.params) {
+            if (!isArr(params)) throw "Invalid paramers";
+        }
+        else params = [];
+        
+        if ((isUnd(id = formula.id))
+        ||  (isUnd(formula = this.formulas[id]))
+        ||  (isUnd(formula = this.functions[formula]))
+        ) throw "Invalid formula";
+        
+        for (i = 0, n = params.length; i < n; i++) {
+            param = params[i];
+            if (param.value) {
+                args[i] = param.value;
+                continue;
+            }
+            param = param.cell;
+            row = cell.parentNode;
+            rows = row.parentNode.parentNode.rows;
+            switch (param.format) {
+                case "A1":
+                    paramCell = rows.item(param.row).cells.item(param.col);
+                    break;
+                case "R1C1":
+                    paramCell = rows.item(
+                        row.rowIndex + (param.rowInc ? param.rowInc : 0)
+                    ).cells.item(
+                        cell.cellIndex + (param.colInc ? param.colInc : 0)
+                    );
+                    break;
+                default:
+                    throw "Invalid parameter";
+            }
+            args[i] = wxl.CellValues.prototype.getCellValue(paramCell);
+        }
+        return formula.apply(null, args);
+    },
+    getCellValueHelper: function(){
+        var me = this;
+        return {
+            regexp: /=(.+)/,
+            parser: function(arr, cell){
+                var formulas = me.formulas, formulaText, formulaId,
+                    functions = me.functions, func,
+                    parseTree, params = [], 
+                    args = []   , i, n, param,
+                    retValue
+                ;
+                try {
+                    parseTree = me.parser.parse(arr[1], cell);
+                    formulaText = me.compile(parseTree, params);
+                    if (!(formulaId = me.formulas[formulaText])){
+                        //for now, formulaId === formulaText. TODO: compress.
+                        formulaId = (me.formulas[formulaText] = formulaText);
+                        for (i=0, n = params.length; i < n; i++) {
+                            param = params[i];
+                            args.push(param.name);
+                            if (!param.cell) continue;
+                            //todo: find the cell
+                            //      mark the current cell as dependant
+                        }
+                        args.push("return " + formulaText + ";");
+                        func = Function.apply(null, args);
+                        functions[formulaId] = func;
+                    }
+                    else func = functions[formulaId];
+                    _sAtt(cell, "data-formula", JSON.stringify({
+                        id: formulaId,
+                        params: params
+                    }));
+                    retValue = {
+                        value: me.calculate(cell)
+                    };
+                }
+                catch (exception) {
+                    retValue = {
+                        error: exception.message
+                    };
+                }
+                return retValue;
+            },
+            toText: function(value) {
+                return String(value);
+            }
+        }        
+    },
+    compile: function(node, params) {
+        var tokenClasses = this.parser.tokenClasses,
+            tc = tokenClasses[node.c],
+            s, p, a, i, n
+        ;
+        if (s = tc.semantics) {
+            if (a = node.l) s = s.replace(/\$l/g, this.compile(a, params));
+            if (a = node.r) s = s.replace(/\$r/g, this.compile(a, params));
+            if (a = node.n) s = s.replace(/\$n/g, a);
+            if (a = node.a) {
+                if (isArr(a)){
+                    for (var t = "", i=0, n = a.length; i < n; i++) {
+                        if (t.length) t += ",";
+                        t += this.compile(a[i], params);
+                    }
+                }
+                else s = s.replace(/\$r/g, this.compile(a, params));
+            }
+        }
+        else {
+            s = ""
+            if (tc.type === "operand") {
+                n = "$" + params.length;
+                p = {name: n};
+                if (tc.name === "cell") {
+                    p.cell = node;
+                }
+                else p.value = node.v;
+                params.push(p);
+                s += n;
+            }
+        }
+        return s;
     }
 };
 /***************************************************************
@@ -2411,7 +2598,7 @@ wxl.DataGrid.getCellName = function(td){
         listen(input, "focus", this.focusHandler, this);
         this.input = input;
     },
-    cellActivated: function(spreadSheet, event, cell){
+    cellActivated: function(dataGrid, event, cell){
         this.input.value = wxl.DataGrid.getCellName(cell);
     },
     changeHandler: function() {
@@ -2484,9 +2671,14 @@ wxl.DataGrid.getCellName = function(td){
             dataGrid: dataGrid,
             ddsupport: true
         });
+        
+        //add formula Support
+        var formulaSupport = new wxl.FormulaSupport();
+        
         //add a value helper
         new wxl.CellValues({
-            dataGrid: dataGrid
+            dataGrid: dataGrid,
+            patterns: [formulaSupport.getCellValueHelper()]
         });
         
         //add a celleditor
