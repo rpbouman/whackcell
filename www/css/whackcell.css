@@ -5,7 +5,7 @@
 body {
     padding: 0px;
     margin: 0px;
-}    
+}
 
 /**
  * Spreadsheet
@@ -18,13 +18,13 @@ div.wxl_datagrid {
     bottom: 0px;
 }
 
-        
+
 div.wxl_datagrid > table {
     border-style: solid;
     border-width: 1px;
     border-color: ThreeDLightShadow ThreeDDarkShadow ThreeDDarkShadow ThreeDLightShadow;
     position: relative;
-    table-layout: fixed; 
+    table-layout: fixed;
 }
 
 table > tbody > tr > td {
@@ -32,7 +32,7 @@ table > tbody > tr > td {
     border-width: 1px;
     border-color: ThreeDFace;
     white-space: nowrap;
-    position:relative;
+    position: relative !important;
     background-color:white;
     display: table-cell;
 }
@@ -40,8 +40,8 @@ table > tbody > tr > td {
 div.wxl_datagrid > table > tbody > tr > td > div {
     white-space: nowrap;
     height: 100%;
-    overflow:visible;
-    position:absolute;
+    overflow: visible;
+    position: absolute;
     margin-top: -10px;
     padding: 2px;
 }
@@ -56,9 +56,9 @@ div.wxl_datagrid > table > thead > tr > th {
     padding: 0px;
 }
 
-div.wxl_datagrid > table > tbody > tr > th, 
+div.wxl_datagrid > table > tbody > tr > th,
 div.wxl_datagrid > table > tbody > tr > td,
-div.wxl_datagrid > table > thead > tr > th, 
+div.wxl_datagrid > table > thead > tr > th,
 div.wxl_datagrid > table > thead > tr > td {
   -moz-user-select: none;
   -khtml-user-select: none;
@@ -78,7 +78,7 @@ div.wxl_datagrid > table > tbody > tr > th > div.wxl_header {
 
 div.wxl_datagrid > table > thead > tr > th > div.wxl_column_header {
     width:50px;
-    text-align: center;    
+    text-align: center;
     height: 16px;
     position: relative;
 }
@@ -100,7 +100,7 @@ div.wxl_datagrid > table > thead > tr > th > div.wxl_column_header > div.wxl_res
     height: 100%;
     width: 3px;
     top: 0px !important;
-    bottom: 0px;    
+    bottom: 0px;
     cursor: ew-resize;
     right: 0px;
     position: absolute;
@@ -214,7 +214,7 @@ div.wxl_toolbar > div {
 /**
  * Celleditor
  */
- 
+
 textarea.wxl_celleditor {
     height: 16px;
     border-style:solid;
@@ -247,3 +247,25 @@ td.wxl_editing {
     background-color: blue;
     color: white;
 }
+/**
+*   Value support
+*/
+td.wxl_datatype_number > div {
+    right: 0px;
+}
+
+td.wxl_datatype_string {
+}
+
+td.wxl_datatype_date {
+
+}
+
+td.wxl_datatype_error {
+    background-color: red;
+}
+
+td.wxl_datatype_formula {
+
+}
+

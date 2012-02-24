@@ -2,10 +2,26 @@
 
 var doc = document,
     body = doc.body,
-    head = doc.getElementsByTagName("head").item(0),
+    head = doc.getElementsByTagName("HEAD").item(0),
     win = window
 ;
 
+/**
+ *  @function normalizeSpace
+ *  @static
+ *  @description Replaces multiple whitespace characters with a single space character
+ *  @param str {string}
+ *  @return {string}
+ */
+function normalizeSpace(str) {
+    return str.replace(/\s\s+/g, " ");
+}
+
+/**
+ *  @function clearBrowserSelection
+ *  @static
+ *  @description cancels the browser's native selection
+ */
 function clearBrowserSelection() {
     if (win.getSelection){
         win.getSelection().removeAllRanges();
@@ -13,13 +29,27 @@ function clearBrowserSelection() {
     else
     if (doc.selection) {
         doc.selection.clear();
-    }    
+    }
 }
 
+/**
+ *  @function isUnd
+ *  @static
+ *  @description returns true if the argument is undefined, false otherwise.
+ *  @param val
+ *  @return {boolean} true if val is undefined, false otherwise
+ */
 function isUnd(val){
     return typeof(val)==="undefined";
 }
 
+/**
+ *  @function isStr
+ *  @static
+ *  @description returns true if the argument is a string, false otherwise.
+ *  @param val
+ *  @return {boolean} true if val is a string, false otherwise
+ */
 function isStr(val){
     return typeof(val)==="string";
 }
@@ -48,46 +78,61 @@ function isEl(el) {
     return isObj(el) && el.nodeType===1;
 }
 
-function forPinO(o, f, scope){
-    if (isUnd(scope)){
-        scope = win;
-    }
-    for (var p in o){
-        if (o.hasOwnProperty(p)){
-            if(f.call(scope, p, o[p])===false){
-                return false;
-            }
-        }
-    }
+/**
+ *  @function forPinO
+ *  @static
+ *  @description Iterate over properties in object and call a callback
+ *  @param o {object} Object to iterate
+ *  @param f {function} callback {boolean} function(property, value). If callback returns false, iteration aborts.
+ *  @param s {object} (optional) scope for calling the callback.
+ *  @return false if the callback returned false and iteration was aborted, true otherwise.
+ */
+function forPinO(o, f, s){
+    if (isUnd(s)) s = null;
+    for (var p in o) if (o.hasOwnProperty(p)) if(f.call(s, p, o[p])===false) return false;
     return true;
 }
 
-function forIinA(a, f, scope){
-    if (isUnd(scope)){
-        scope = win;
-    }
-    for (var i=0, l=a.length; i<l; i++){
-        if(f.call(scope, i, a[i])===false){
-            return false;
-        }
-    }
+/**
+ *  @function forIinA
+ *  @static
+ *  @description Iterate over elements in an Array and call a callback
+ *  @param a {array} Array to iterate
+ *  @param f {function} callback {boolean} function(index, element). If callback returns false, iteration aborts.
+ *  @param s {object} (optional) scope for calling the callback.
+ *  @return false if the callback returned false and iteration was aborted, true otherwise.
+ */
+function forIinA(a, f, s){
+    var i, n = a.length;
+    if (isUnd(s)) s = null;
+    for (i = 0; i < n; i++) if(f.call(s, i, a[i])===false) return false;
     return true;
 }
 
-function del(){
-    var o = arguments[0];
-    for (var i=1, n = arguments.length; i < n; i++){
-        delete o[arguments[i]];
+/**
+ *  @function del
+ *  @static
+ *  @description Delete specified properties from the argument object, or all properties if none specified. Properties are specified as a variable number of string arguments after the initial object argument.
+ *  @param o {object} The object to delete properties from
+ */
+function del(o){
+    var i, p, n = arguments.length;
+    if (n === 1) {
+        for (p in o) if (o.hasOwnProperty(p)) delete o[p];
+    }
+    else {
+        for (i = 1; i < n; i++) if (o.hasOwnProperty(p = arguments[i])) delete o[p];
     }
 }
 
-function free(o) {
-    var p;
-    for (p in o) {
-        if (o.hasOwnProperty(p)) delete o.p;
-    }
-};
-
+/**
+ *  @function position
+ *  @static
+ *  @description Get the absolute coordinaes of the first argument element. If a second argument element is specified, Coordinates are relative to that second argument element.
+ *  @param el1 {DOMElement|string} Element to get the coordinates from.
+ *  @param el2 {DOMElement|string} (optional) Element to compute relative coordinates of e1 from.
+ *  @return {object} An object with members left and top representing e1's coordinates.
+ */
 function position(e1, e2){
     var left = 0, top = 0;
     e1 = el(e1);
@@ -95,46 +140,59 @@ function position(e1, e2){
         left += e1.offsetLeft;
         top += e1.offsetTop;
     } while (e1 = e1.offsetParent);
-    
+
     if (e2) {
         var pos = position(e2);
         left -= pos.left;
         top -= pos.top;
     }
-    
+
     return {
         left: left,
         top: top
     };
 }
 
+/**
+ *  @function el
+ *  @description Get the DOM element specified by the argument. If the argument is a string, get the element with that id. If the argument is already an element, return the element.
+ *  @param {string} id The id of the element to retrieve.
+ *  @return {DOMelement} the DOM element.
+ */
 function el(id) {
     var e;
-    if (isStr(id)) {
-        e = doc.getElementById(id);
-    }
-    else 
-    if (isEl(id)) {
-        e = id;
-    }
+    if (isStr(id)) e = doc.getElementById(id);
+    else
+    if (isEl(id)) e = id;
     return e;
 }
 
+/**
+ *  @function tag
+ *  @static
+ *  @description Get the first DomElement with the specified tag name either from the document or from the specified DomElement
+ *  @param name {string} The tagname for which to retrieve a DOMElement
+ *  @param node {node} (optional) The node where to start searching for elements.
+ *  @return {DOMElement} the element with the specified tagname
+ */
 function tag(name, node){
-    if (isUnd(node)){
-        node = doc;
-    }
-    else {
-        node = el(node);
-    }
+    if (isUnd(node)) node = doc;
+    else node = el(node);
     return node.getElementsByTagName(name).item(0);
 }
 
+/**
+ *  @function txt
+ *  @static
+ *  @description Get the text content of the specified DOMElement
+ *  @param el {DOMElement} the element to get the text from.
+ *  @return {string} The text inside the specified element.
+ */
 function txt(el){
-    //on first call, we examine the properies of the argument element 
-    //to try and find a native (and presumably optimized) method to grab 
+    //on first call, we examine the properies of the argument element
+    //to try and find a native (and presumably optimized) method to grab
     //the text value of the element.
-    //We then overwrite the original _getElementText 
+    //We then overwrite the original _getElementText
     //to use the optimized one in any subsequent calls
     var func;
     if (!isUnd(el.innerText)) {         //ie
@@ -142,19 +200,19 @@ function txt(el){
             return el.innerText;
         };
     }
-    else 
+    else
     if (!isUnd(el.textContent)) {       //ff, chrome
         func = function(el){
             return el.textContent;
         };
     }
-    else 
+    else
     if (!isUnd(el.nodeTypedValue)) {    //ie8
         func = function(el){
             return el.nodeTypedValue;
         };
     }
-    else 
+    else
     if (el.normalize){
         func = function(el) {
             el.normalize();
@@ -173,10 +231,10 @@ function txt(el){
                 numChildNodes = childNodes.length
             ;
             for (i=0; i<numChildNodes; i += 1){
-                childNode = childNodes.item(i);                                                        
+                childNode = childNodes.item(i);
                 if (childNode.data!==null) {
                     text.push(childNode.data);
-                }                                                      
+                }
             }
             return text.length ? text.join("") : null;
         }
@@ -200,12 +258,10 @@ function hasClass(e, cls){
 function getClasses(e){
     var e = el(e),
         classes = e.className.split(" "),
-        ret = {}        
+        ret = {}
     ;
     forIinA(classes, function(i, cls){
-        if (cls!=="") {
-            ret[cls] = cls;
-        }
+        if (cls !== "") ret[cls] = cls;
     })
     return ret;
 }
@@ -219,9 +275,7 @@ function addOrRemoveClasses(e, classes, addRemove) {
     else {
         e = el(e);
         var s = "", c, cls = getClasses(e);
-        if (isStr(classes)) {
-            classes = classes.split(" ");
-        }
+        if (isStr(classes)) classes = classes.split(" ");
         if (isArr(classes)){
             var cc = {};
             forIinA(classes, function(i,v){
@@ -253,7 +307,11 @@ function removeClass(e, classes){
     removeClasses(e, classes);
 }
 
-function _sAtts(e, atts){
+function replaceClass(e, class1, class2) {
+    e.className = e.className.replace(new RegExp("\\b" + class1 + "\\b", "g"), class2);
+}
+
+function sAtts(e, atts){
     e = el(e);
     var name, val;
     for (name in atts) {
@@ -278,62 +336,45 @@ function _sAtts(e, atts){
     }
 }
 
-function _gAtt(e, att){
-    return el(e).getAttribute(att);
-}
-
-function _sAtt(e, att, val){
+function sAtt(e, att, val){
     el(e).setAttribute(att, val);
 }
 
-function _rAtt(e, att){
+function gAtt(e, att){
+    return el(e).getAttribute(att);
+}
+
+function rAtt(e, att){
     el(e).removeAttribute(att);
 }
 
 function _chs(e, chs) {
     var m;
     e = el(e);
-    if (!isArr(chs)){
-        chs = [chs];
-    }
+    if (!isArr(chs)) chs = [chs];
     for (var i=0, n=chs.length, c; i<n; i++){
         c = chs[i];
-        if (isStr(c)) {
-            c = doc.createTextNode(c);
-        }
+        if (isStr(c)) c = doc.createTextNode(c);
         e.appendChild(c);
     }
 }
 
-function _crEl(tag, atts, chs, p){
+function crEl(tag, atts, chs, p){
     var el = doc.createElement(tag);
-    if (atts) {
-        _sAtts(el, atts);
-    }
-    if (chs) {
-        _chs(el, chs);
-    }
-    if (p) {
-        _chs(p, el)
-    }
+    if (atts) sAtts(el, atts);
+    if (chs) _chs(el, chs);
+    if (p) _chs(p, el);
     return el;
 }
 
 function merge(dst, src, mode){
     var p,v;
-    mode = parseInt(mode, 10);
-    mode = mode ? mode : 0;
-    if (!isObj(dst)) {
-        dst = {};
-    }
+    if (!(mode = parseInt(mode, 10))) mode = merge.MERGE;
+    if (!isObj(dst)) dst = {};
     forPinO(src, function(p, o){
-        if (((o===null) && (mode & merge.DELETE_IF_NULL)) || (mode & merge.DELETE)) {
-            delete dst[p];
-        }
-        else 
-        if (isUnd(dst[p]) || (mode & merge.OVERWRITE)) {
-            dst[p] = o;
-        }
+        if (((o===null) && (mode & merge.DELETE_IF_NULL)) || (mode & merge.DELETE)) delete dst[p];
+        else
+        if (isUnd(dst[p]) || (mode & merge.OVERWRITE)) dst[p] = o;
     });
     return dst;
 }
@@ -349,7 +390,7 @@ function numGroups(regexp) {
     return regexp.length - regexp.replace(/\(/g, "").length;
 }
 /***************************************************************
-*   
+*
 *   Event
 *
 ***************************************************************/
@@ -360,13 +401,13 @@ var Event;
     }
     this.browserEvent = e;
     return this;
-}).prototype = {    
-    getTarget: function(){ 
+}).prototype = {
+    getTarget: function(){
         var browserEvent = this.browserEvent;
         if (browserEvent.target) {
             target = browserEvent.target;
         }
-        else 
+        else
         if (browserEvent.srcElement) {
             target = browserEvent.srcElement
         }
@@ -382,7 +423,7 @@ var Event;
         else
         if (doc.attachEvent) {
             switch (this.browserEvent.button) {
-                case 1: 
+                case 1:
                     return 0;
                 case 2:
                     return 2;
@@ -410,7 +451,7 @@ var Event;
     preventDefault: function() {
         this.browserEvent.preventDefault();
     },
-    save: function(){ 
+    save: function(){
         var proto = Event.prototype, savedEvent = new Event.Saved(), property;
         for (property in proto) {
             if (property.indexOf("get")===0 && isFunc(proto[property])) {
@@ -461,7 +502,7 @@ function listen(node, type, listener, scope) {
             listener.call(scope, Event.get(e));
         }, true);
     }
-    else 
+    else
     if (node.attachEvent){
         node.attachEvent("on" + type, function(){
             listener.call(scope, Event.get(win.event));
@@ -470,7 +511,7 @@ function listen(node, type, listener, scope) {
 }
 
 /***************************************************************
-*   
+*
 *   Observable
 *
 ***************************************************************/
@@ -502,7 +543,7 @@ var Observable;
         }
         for (i = 0, n = handlers.length; i < n; i++){
             handler = handlers[i];
-            if (!isUnd(context) && context !== handler.context) continue; 
+            if (!isUnd(context) && context !== handler.context) continue;
             if (handler.method.call(
                 handler.scope, this, type, data
             )===false) {
@@ -514,7 +555,7 @@ var Observable;
 };
 
 /***************************************************************
-*   
+*
 *   DDHandler
 *
 ***************************************************************/
@@ -533,7 +574,7 @@ var DDHandler;
     if (config.dragProxy!==false) {
         me.dragProxy = el(config.dragProxy);
         if (!me.dragProxy) {
-            me.dragProxy = _crEl("DIV", {
+            me.dragProxy = crEl("DIV", {
                 id: isStr(config.dragProxy) ? config.dragProxy : ""
             }, null, node);
         }
@@ -541,7 +582,7 @@ var DDHandler;
     if (config.dropProxy!==false) {
         me.dropProxy = el(config.dropProxy);
         if (!me.dropProxy) {
-            me.dropProxy = _crEl("DIV", {
+            me.dropProxy = crEl("DIV", {
                 id: isStr(config.dropProxy) ? config.dropProxy : ""
             }, null, node);
         }
@@ -562,7 +603,7 @@ var DDHandler;
     listen(this.node, "mousemove", function(e){
         me.event = e;
         me.handleMouseMove(e);
-    }, this);    
+    }, this);
 }).prototype = {
     listen: function(listener){
         if (!listener.scope) {
@@ -606,13 +647,13 @@ var DDHandler;
         me.whileDragListeners = [];
         me.startDragEvent = e.save();
         forIinA(me.listeners, function(i, a){
-            //check all listeners if they are interested 
+            //check all listeners if they are interested
             //in this particular drag event
             if (a.startDrag.call(a.scope, e, me)) {
                 //this listener is interested, so we now save the
-                //corresponding listeners for 
+                //corresponding listeners for
                 //the remaining phases of the DnD event
-                if (isFunc(a.endDrag)) {            
+                if (isFunc(a.endDrag)) {
                     me.endDragListeners.push(a);
                 }
                 if (isFunc(a.whileDrag)) {
@@ -621,7 +662,7 @@ var DDHandler;
             }
         });
     },
-    endDrag: function(e) {    
+    endDrag: function(e) {
         var me = this;
         if (me.startDragEvent) {
             forIinA(me.endDragListeners, function(i, a){
@@ -652,7 +693,7 @@ var KBHandler;
         var me = this,
             config = me.config,
             container = el(config.container),
-            textArea = _crEl("TEXTAREA", {
+            textArea = crEl("TEXTAREA", {
                 style: {
                     position: "absolute",
                     height: "0px",
@@ -684,7 +725,7 @@ var KBHandler;
 }, Observable.prototype);
 
 /***************************************************************
-*   
+*
 *   wxl
 *
 ***************************************************************/
@@ -692,7 +733,7 @@ var KBHandler;
 win["wxl"] = {};
 
 /***************************************************************
-*   
+*
 *   Stylesheet
 *
 ***************************************************************/
@@ -701,7 +742,7 @@ win["wxl"] = {};
         enabled: true,
         rules: {}
     });
-    if (config.id){ 
+    if (config.id){
         this.style = el(config.id);
         if (this.style!==null) {
             //todo: load the rules
@@ -709,10 +750,10 @@ win["wxl"] = {};
     }
 }).prototype = {
     render: function(){
-        var me = this, 
+        var me = this,
             config = me.config
         ;
-        me.style = _crEl("STYLE", {
+        me.style = crEl("STYLE", {
             type: "text/css",
             id: config.id
         }, null, head);
@@ -726,7 +767,7 @@ win["wxl"] = {};
             this.style.disabled = !enabled;
         }
     },
-    getRule: function(selector){ 
+    getRule: function(selector){
         var ruleset = this.getRuleSet(), rule = null;
         selector = selector.toUpperCase();
         forIinA(ruleset, function(i, r){
@@ -739,40 +780,29 @@ win["wxl"] = {};
     },
     getStyle: function(selector) {
         var rule;
-        if (rule = this.getRule(selector)) {
-            return rule.style;
-        }
+        if (rule = this.getRule(selector)) return rule.style;
         return null;
     },
     unApplyStyle: function(selector, style){
         var s = this.getStyle(selector);
-        if (s === null) {
-            return;
-        }
+        if (s === null) return;
         merge(s, style, merge.DELETE);
     },
     applyStyle: function(selector, style, create){
         var r = this.getRule(selector);
         if (r === null) {
-            if (create!==false) {
-                this.addRule(selector, style);
-            }
+            if (create !== false) this.addRule(selector, style);
             return;
         }
         merge(r.style, style, merge.OVERWRITE);
-        
     },
     getCssText: function(properties) {
         var property, value, cssText = "";
         for (property in properties){
             if (properties.hasOwnProperty(property)) {
                 value = properties[property];
-                if (value===null){
-                    continue;
-                }
-                if (cssText!==""){
-                    cssText += ";";
-                }
+                if (value === null) continue;
+                if (cssText !== "") cssText += ";";
                 cssText += "\n" + property + ": " + value;
             }
         }
@@ -780,82 +810,67 @@ win["wxl"] = {};
     },
     addRule: function(selector, properties){
         var stylesheet, styles, property, value, index;
-        if (arguments.length===1) {
+        if (arguments.length === 1) {
             properties = selector.properties;
             selector = selector.selector;
         }
-        if (isStr(properties)) {
-            styles = properties;
-        }
-        else if (isObj(properties)) {
-            styles = this.getCssText(properties);
-        }        
+        if (isStr(properties)) styles = properties;
+        else
+        if (isObj(properties)) styles = this.getCssText(properties);
         if (stylesheet = this.style.styleSheet) {   //IE
             index = stylesheet.addRule.call(stylesheet, selector, styles);
         }
-        else 
-        if (stylesheet = this.style.sheet) {        
+        else
+        if (stylesheet = this.style.sheet) {
             if (stylesheet.addRule) {               //chrome
                 index = stylesheet.addRule.call(stylesheet, selector, styles);
             }
-            else 
+            else
             if (stylesheet.insertRule) {            //opera, firefox
                 index = stylesheet.insertRule.call(
-                    stylesheet, 
-                    selector + "{" + styles + "}", 
+                    stylesheet,
+                    selector + "{" + styles + "}",
                     stylesheet.cssRules.length
                 );
             }
         }
-        else {
-            throw "No stylesheet";
-        }
+        else throw "No stylesheet";
     },
     addRules: function(rules){
         if (isObj(rules)){
             if (isArr(rules)){
-                var i, numRules = rules.length, rule;
-                for (i=0; i<numRules; i++){
+                var i, n = rules.length, rule;
+                for (i = 0; i < n; i++){
                     rule = rules[i];
                     this.addRule(rule.selector, rule.styles);
                 }
             }
-            else {
-                for (selector in rules){
-                    if (rules.hasOwnProperty(selector)) {
-                        this.addRule(selector, rules[selector]);
-                    }
-                }
-            }
+            else for (selector in rules) if (rules.hasOwnProperty(selector)) this.addRule(selector, rules[selector]);
         }
         return true;
     },
     getRuleSet: function(){
-        if (!this.style) {
-            return null;
-        }
+        if (!this.style) return null;
         var sheet = this.style.sheet || this.style.styleSheet;
         return sheet.rules || sheet.cssRules;
-    },    
+    },
     getRules: function(selector){
         var r = {};
-        if (isStr(selector)){
-            selector = [selector];
-        }
-        else 
+        if (isStr(selector)) selector = [selector];
+        else
         if (isArr(selector)){
-            
+
         }
-        else 
+        else
         if (isObj(selector)){
-            
+
         }
         return r;
     }
 };
 
 /***************************************************************
-*   
+*
 *   Range
 *
 ***************************************************************/
@@ -866,23 +881,21 @@ win["wxl"] = {};
         var config = this.config,
             start = config.start,
             end = config.end,
-            rowIndex = start.row, 
+            rowIndex = start.row,
             lastRowIndex = end.row,
-            colIndex, 
+            colIndex,
             lastColIndex = end.col,
-            rows = config.dataGrid.getRows(), 
+            rows = config.dataGrid.getRows(),
             row, cell
         ;
-        if (!scope) {
-            scope = win;
-        }
+        if (!scope) scope = win;
         for (; rowIndex <= lastRowIndex; rowIndex++) {
             row = rows.item(rowIndex);
             colIndex = start.col;
             for (; colIndex <= lastColIndex; colIndex++) {
                 cell = row.cells.item(colIndex);
                 callback.call(scope, cell);
-            }            
+            }
         }
     },
     allRows: function(){
@@ -898,7 +911,7 @@ win["wxl"] = {};
 };
 
 /***************************************************************
-*   
+*
 *   DataGrid
 *
 ***************************************************************/
@@ -942,11 +955,11 @@ win["wxl"] = {};
         for (i=0, n = me.numCols; i <= n; i++) {
             className = "c" + i;
             thead += "<th class=\"" + className + "\" scope=\"col\">";
-            thead += 
-                "<div class=\"wxl_header wxl_column_header\">" + 
-                    (i ? "<span>" + wxl.DataGrid.getColumnHeaderName(i-1) + "</span>" + 
+            thead +=
+                "<div class=\"wxl_header wxl_column_header\">" +
+                    (i ? "<span>" + wxl.DataGrid.getColumnHeaderName(i-1) + "</span>" +
                          "<div class=\"wxl_resize wxl_resize_horizontal\"></div>": ""
-                    ) + 
+                    ) +
                 "</div>"
             ;
             thead += "</th>";
@@ -965,12 +978,12 @@ win["wxl"] = {};
         stylePrefix1 += ".";
         for (i=1, n = me.numRows; i <= n; i++) {
             className = "r" + i;
-            tbody += 
+            tbody +=
                 "<tr class=\"" + className + "\">" +
                 "<th class=\"th\" scope=\"row\" >" +
                     "<div class=\"wxl_header wxl_row_header\">" +
-                        "<span>" + i + "</span>" + 
-                        "<div class=\"wxl_resize wxl_resize_vertical\"></div>" + 
+                        "<span>" + i + "</span>" +
+                        "<div class=\"wxl_resize wxl_resize_vertical\"></div>" +
                     "</div>" +
                 "</th>" + row
             ;
@@ -981,7 +994,7 @@ win["wxl"] = {};
                 };
             }
         }
-        container.innerHTML = 
+        container.innerHTML =
             "<table cellspacing=\"0\" cellpadding=\"0\" class=\"wxl_datagrid\" id=\"wxl_" + id + "\">" +
                 "<thead><tr class=\"r0\">" + thead + "</tr></thead>" +
                 "<tbody>" + tbody + "</tbody>" +
@@ -1007,7 +1020,7 @@ win["wxl"] = {};
             kbHandler = this.kbHandler = new KBHandler({
                 container: me.container
             });
-            kbHandler.render();    
+            kbHandler.render();
         }
         listen(me.table, "click", this.clickHandler, me);
         return kbHandler;
@@ -1070,7 +1083,7 @@ win["wxl"] = {};
     },
     selectCell: function(td){
         this.addToSelection(this.createRange(
-            td.parentNode.rowIndex, td.cellIndex, 
+            td.parentNode.rowIndex, td.cellIndex,
             td.parentNode.rowIndex, td.cellIndex
         ));
     },
@@ -1087,7 +1100,7 @@ win["wxl"] = {};
                 return;
             }
             removeClass([
-                activeCell, 
+                activeCell,
                 this.getColumnHeader(activeCell.cellIndex),
                 this.getRowHeader(activeCell.parentNode.rowIndex)
             ], "wxl_active");
@@ -1096,7 +1109,7 @@ win["wxl"] = {};
         this.activeCell = td;
         if (td) {
             addClass([
-                td, 
+                td,
                 this.getColumnHeader(td.cellIndex),
                 this.getRowHeader(td.parentNode.rowIndex)
             ], "wxl_active");
@@ -1142,7 +1155,7 @@ win["wxl"] = {};
                 display: "none"
             });
         }
-        
+
         if (rowIndex < firstDisplayRow) {
             config.firstDisplayRow = rowIndex;
             len = firstDisplayRow;
@@ -1183,11 +1196,12 @@ win["wxl"] = {};
         tag("DIV", cell).innerHTML = escXML(text);
     },
     clearCell: function(cell) {
-        _rAtt(cell, "data-content");
+        //TODO: rewrite to use setCellContent
+        rAtt(cell, "data-content");
         tag("DIV", cell).innerHTML = "";
     },
     clickHandler: function(e) {
-        var target = e.getTarget(), 
+        var target = e.getTarget(),
             className = target.className,
             parentNode
         ;
@@ -1197,7 +1211,7 @@ win["wxl"] = {};
             }
             return false;
         }
-        tagname: switch (target.tagName) { 
+        tagname: switch (target.tagName) {
             case "SPAN":
                 parentNode = target.parentNode;
                 if (parentNode.tagName!=="DIV") {
@@ -1209,7 +1223,7 @@ win["wxl"] = {};
             case "DIV":
                 switch (className) {
                     case "wxl_header wxl_column_header":
-/*                    
+/*
                         if (!e.getCtrlKey()) {
                             this.clearSelection();
                         }
@@ -1224,7 +1238,7 @@ win["wxl"] = {};
                         this.selectRow(target.parentNode.parentNode.rowIndex);
 */
                         break tagname;
-                    default: 
+                    default:
                         parentNode = target.parentNode;
                         if (parentNode.tagName==="TD") {
                             target = parentNode;
@@ -1282,13 +1296,13 @@ wxl.DataGrid.getColumnIndex = function(address) {
 };
 
 wxl.DataGrid.getCellName = function(td){
-    return  wxl.DataGrid.getColumnHeaderName(td.cellIndex-1) + 
+    return  wxl.DataGrid.getColumnHeaderName(td.cellIndex-1) +
             td.parentNode.rowIndex
     ;
 };
 
 /***************************************************************
-*   
+*
 *   Resizable
 *
 ***************************************************************/
@@ -1299,7 +1313,7 @@ wxl.DataGrid.getCellName = function(td){
     });
     this.init();
 }).prototype = {
-    init: function(){ 
+    init: function(){
         var config = this.config,
             dataGrid = config.dataGrid;
         if (config.columns!==false) {
@@ -1357,16 +1371,16 @@ wxl.DataGrid.getCellName = function(td){
             startDrag: function(event, ddHandler){
                 var target = event.getTarget();
                 if (target.tagName==="DIV" && hasClass(target, "wxl_resize")) {
-                    var pos = event.getXY(), 
-                        tabPos = position(table), 
+                    var pos = event.getXY(),
+                        tabPos = position(table),
                         cls,
                         startDragEvent = ddHandler.startDragEvent,
                         dragProxy = ddHandler.dragProxy,
-                        dragProxyStyle = dragProxy.style 
+                        dragProxyStyle = dragProxy.style
                     ;
                     dragProxy.className = "";
                     if (hasClass(target, "wxl_resize_vertical")) {
-                        if (config.rows===false) return false; 
+                        if (config.rows===false) return false;
 
                         pos.y += target.clientHeight;
                         dragProxyStyle.width = table.clientWidth + "px";;
@@ -1377,7 +1391,7 @@ wxl.DataGrid.getCellName = function(td){
                     }
                     else
                     if (hasClass(target, "wxl_resize_horizontal")) {
-                        if (config.columns===false) return false; 
+                        if (config.columns===false) return false;
 
                         pos.x += target.clientWidth;
                         dragProxyStyle.width = "1px";
@@ -1436,7 +1450,7 @@ wxl.DataGrid.getCellName = function(td){
     }
 };
 /***************************************************************
-*   
+*
 *   Movable
 *
 ***************************************************************/
@@ -1447,7 +1461,7 @@ wxl.DataGrid.getCellName = function(td){
     });
     this.init();
 }).prototype = {
-    init: function(){ 
+    init: function(){
         var config = this.config,
             dataGrid = config.dataGrid;
         if (config.rows!==false) dataGrid.moveRow = this.moveRow;
@@ -1462,10 +1476,10 @@ wxl.DataGrid.getCellName = function(td){
         if (targetIndex===sourceIndex) return;
 
         var table = this.table,
-            rows = table.rows, 
+            rows = table.rows,
             sourceRow = rows.item(sourceIndex), sourceCell,
             sourceCells = sourceRow.cells,
-            n = sourceCells.length, i, 
+            n = sourceCells.length, i,
             targetRow, targetCell,
             activeCell = this.activeCell
         ;
@@ -1475,7 +1489,7 @@ wxl.DataGrid.getCellName = function(td){
         }
         targetRow = table.insertRow(targetIndex);
         targetRow.className = "r" + targetIndex;
-        targetRow.appendChild(_crEl("th", {
+        targetRow.appendChild(crEl("TH", {
             "class": "th",
             scope: "row"
         }, tag("DIV", sourceCells.item(0))));
@@ -1543,21 +1557,21 @@ wxl.DataGrid.getCellName = function(td){
                         dragProxyStyle = dragProxy.style,
                         dropProxy = ddHandler.dropProxy,
                         dropProxyStyle = dropProxy.style,
-                        parent = target.parentNode, 
-                        pos = position(parent), 
+                        parent = target.parentNode,
+                        pos = position(parent),
                         tabPos = position(table), cls,
                         startDragEvent = ddHandler.startDragEvent,
                         offset, size
                     ;
                     pos.x = pos.left - tabPos.left;
-                    pos.y = pos.top - tabPos.top;                    
+                    pos.y = pos.top - tabPos.top;
                     dragProxy.className = "";
                     if (hasClass(target, "wxl_row_header")) {
                         if (config.rows === false) return false;
 
                         offset = (pos.x + parent.clientWidth) + "px";
                         size = (table.clientWidth - parent.clientWidth) + "px";
-                        
+
                         dragProxyStyle.width = size;
                         dragProxyStyle.left = offset;
                         dragProxyStyle.height = parent.clientHeight + "px";
@@ -1575,12 +1589,12 @@ wxl.DataGrid.getCellName = function(td){
 
                         offset = (pos.y + parent.clientHeight) + "px";
                         size = (table.clientHeight - parent.clientHeight) + "px";
-                        
+
                         dragProxyStyle.height = size;
                         dragProxyStyle.top = offset;
                         dragProxyStyle.width = parent.clientWidth + "px";
                         dragProxyStyle.left =  (startDragEvent.left = pos.x) + "px";
-                        
+
                         cls = "wxl_column_mover";
                         dropProxyStyle.height = size;
                         dropProxyStyle.top = offset;
@@ -1687,13 +1701,13 @@ wxl.DataGrid.getCellName = function(td){
     }
  };
 /***************************************************************
-*   
+*
 *   CellEditor
 *
 ***************************************************************/
 (win["wxl"]["CellEditor"] = function(config) {
     this.config = config = merge(config, {
-    });    
+    });
     this.dataGrid = null;
     this.cell = null;
     this.render();
@@ -1723,7 +1737,7 @@ wxl.DataGrid.getCellName = function(td){
     cellActivated: function(dataGrid, event, cell){
         if (this.isEditing() && cell!==this.cell) {
             if (!this.stopEditing()) return false;
-        } 
+        }
         this.dataGrid = dataGrid;
         this.cell = cell;
         this.textarea.value = dataGrid.getCellContent(cell);
@@ -1762,6 +1776,8 @@ wxl.DataGrid.getCellName = function(td){
             this.dataGrid = null;
             stopEditing = true;
         } catch (exception) {
+            alert(exception.message||exception);
+            debugger;
             stopEditing = false;
         }
         return stopEditing;
@@ -1872,7 +1888,7 @@ wxl.DataGrid.getCellName = function(td){
         this.textarea.focus();
     },
     focusHandler: function(e) {
-        var dataGrid = this.dataGrid, cell; 
+        var dataGrid = this.dataGrid, cell;
         if (dataGrid &&  (cell = dataGrid.getActiveCell())) {
             this.startEditing(dataGrid, "focus", cell);
         }
@@ -1882,126 +1898,163 @@ wxl.DataGrid.getCellName = function(td){
     }
 };
 /***************************************************************
-*   
+*
 *   CellValues
 *
 ***************************************************************/
 (win["wxl"]["CellValues"] = function(config) {
     this.config = config;
-    this.patterns = win.wxl.CellValues.prototype.patterns;
-    if (config.patterns) this.patterns = this.patterns.concat(config.patterns);
     this.init();
 }).prototype = {
-    patterns: [{
-        regexp: /'(.+)/,
-        parser: function(arr){
-            return {
-                value: arr[0].substr(1)
-            };
-        },
-        toText: function(value){
-            return value;
-        }
-    },  {   //see https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date/parse
-        //see http://www.w3.org/TR/NOTE-datetime and http://tools.ietf.org/html/rfc822#section-5
-        regexp: /(\d{2,4}[\/\.\-]\d{1,2}([\/\.\-]\d{1,2}(T\d\d:\d\d(:\d\d)?(Z|[+-]\d\d:\d\d))?)?)|(((Mon?|Tue?|Wed?|Thu?|Fri?|Sat?|Sun?),?\s*)?\d{1,2}\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*\d{1,4}(\s+\d\d:\d\d(:\d\d(\s+(UT|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|Z|A|M|N|Y|([+-]\s*\d{4})))?)?)?)/,
-        parser: function(arr){
-            var ts = Date.parse(arr[0]),
-                obj = {}
-            ;
-            if (isNaN(ts)) {
-                obj.error = "Invalid date";
+    clsPrefix: "wxl_datatype_",
+    patterns: {
+        string: {
+            regexp: /'(.+)/,
+            parser: function(arr){
+                return {
+                    value: arr[0].substr(1)
+                };
+            },
+            toText: function(value){
+                return value;
             }
-            else {
-                obj.value = new Date(ts);
+        },
+        date: {
+            //see https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date/parse
+            //see http://www.w3.org/TR/NOTE-datetime and http://tools.ietf.org/html/rfc822#section-5
+            regexp: /(\d{2,4}[\/\.\-]\d{1,2}([\/\.\-]\d{1,2}(T\d\d:\d\d(:\d\d)?(Z|[+-]\d\d:\d\d))?)?)|(((Mon?|Tue?|Wed?|Thu?|Fri?|Sat?|Sun?),?\s*)?\d{1,2}\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*\d{1,4}(\s+\d\d:\d\d(:\d\d(\s+(UT|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|Z|A|M|N|Y|([+-]\s*\d{4})))?)?)?)/,
+            parser: function(arr){
+                var ts = Date.parse(arr[0]), obj = {};
+                if (isNaN(ts)) obj.error = "Invalid date";
+                else obj.value = new Date(ts);
+                return obj;
+            },
+            toText: function(value) {
+                return value.toString();
             }
-            return obj;
         },
-        toText: function(value) {
-            return value.toString();
+        number: {
+            regexp: /[+-]?((((\d+)|(\d{1,3}(,\d{3})+))(\.\d*)?)|(\.\d+))([eE][+-]?\d+)?/,
+            parser: function(arr){
+                return {
+                    value: Number(arr[0].replace(",", ""))
+                };
+            },
+            toText: function(value) {
+                return String(value);
+            }
         }
-    },  {
-        regexp: /[+-]?((((\d+)|(\d{1,3}(,\d{3})+))(\.\d*)?)|(\.\d+))([eE][+-]?\d+)?/,
-        parser: function(arr){
-            return {
-                value: Number(arr[0].replace(",", ""))
-            };
-        },
-        toText: function(value) {
-            return String(value);
-        }
-    }],
+    },
     init: function() {
         var config = this.config,
             dataGrid = config.dataGrid,
-            pattern, groups = 0
+            pattern, groups = 0,
+            patterns = {},
+            formulaSupport = config.formulaSupport,
+            formulaHelper
         ;
+        if (formulaSupport) {
+            formulaHelper = formulaSupport.createCellValueHelper();
+            patterns[formulaHelper.name] = formulaHelper;
+            formulaSupport.dataGrid = dataGrid;
+        }
         dataGrid.valueHelper = this;
         dataGrid.setCellContent = this.setCellContent;
         dataGrid.getCellContent = this.getCellContent;
+        dataGrid.setCellValue = this.setCellValue;
         dataGrid.getCellValue = this.getCellValue;
         pattern = "";
-        forIinA(this.patterns, function(i, a){
-            var source, noLiteralParenthesis 
+        this.patterns = merge(patterns, config.patterns || win.wxl.CellValues.prototype.patterns);
+        forPinO(this.patterns, function(p, o){
+            var source;
+            o.name = p;
             if (pattern.length) pattern += "|";
-            source = a.regexp.source;
-            groups += 1;
-            a.startGroup = groups;
+            source = o.regexp.source;
+            o.startGroup = ++groups;
             groups += numGroups(source);
-            a.endGroup = groups + 1;
+            o.endGroup = groups + 1;
             pattern += "(" + source + ")";
         });
-        //note that we must not set the global flag
-        //global flag will cause the regexp to maintain state
-        //leading to unexpected results.
         this.regexp = new RegExp("^" + pattern + "$", "i");
     },
     setCellContent: function(cell, content) {
         var valueHelper = this.valueHelper,
+            formulaSupport = valueHelper.config.formulaSupport,
             obj = valueHelper.parse(content, cell),
-            value = obj.value
+            value = obj.value,
+            type = obj.type,
+            typeName,
+            clsPrefix = valueHelper.clsPrefix,
+            className = cell.className = normalizeSpace(cell.className.replace(
+                new RegExp("\\b" + clsPrefix + "\\w+\\b", "g"),
+                ""
+            ))
         ;
         if (obj.error) {
+            cell.className = normalizeSpace(className + " " + clsPrefix + "error");
             throw obj.error;
         }
-        _sAtt(cell, "data-content", content);
+        sAtt(cell, "data-content", content);
+        this.setCellValue(cell, value, type);
+        if (formulaSupport) formulaSupport.updateDependencies(cell);
+    },
+    setCellValue: function(cell, value, type) {
+        var className = cell.className,
+            typeName,
+            valueHelper = this.valueHelper,
+            clsPrefix = valueHelper.clsPrefix
+        ;
         cell.value = value;
-        if (obj.type) value = obj.type.toText(value);
-        free(obj);
+        if (type) {
+            typeName = type.name;
+            className = className + " " + clsPrefix + typeName;
+            if (typeName === "formula") {
+                typeName = typeof(value);
+                switch(typeName) {
+                    case "string":
+                    case "number":
+                        break;
+                    case "object":
+                        if (value.constructor == Date) typename = "date";
+                        else typeName = null;
+                        break;
+                    default:
+                        typeName = null;
+                }
+                if (typeName) className += " " + clsPrefix + typeName;
+            }
+            cell.className = normalizeSpace(className);
+            value = type.toText(value);
+        }
         this.setCellText(cell, value);
     },
     getCellValue: function(cell) {
         var value = cell.value;
-        if (isUnd(value)) {
-            value = wxl.CellValues.prototype.getCellContent(cell);
-        }
+        if (isUnd(value)) value = wxl.CellValues.prototype.getCellContent(cell);
         return value;
     },
     getCellContent: function(cell) {
-        var content = _gAtt(cell, "data-content");
+        var content = gAtt(cell, "data-content");
         return (content === null) ?  wxl.DataGrid.prototype.getCellText(cell) : content;
     },
     parse: function(text, cell){
-        var items = this.regexp.exec(text), value;
+        var value, items = this.regexp.exec(text);
         if (!items) return {
             value: text
         };
-        if(forIinA(this.patterns, function(i, a){
-            if (items[a.startGroup]!==text) return;
-            value = a.parser(items.slice(a.startGroup, a.endGroup), cell);
-            cell.value = value;
-            value.type = a;
+        if(forPinO(this.patterns, function(p, o){
+            if (items[o.startGroup] !== text) return;
+            value = o.parser(items.slice(o.startGroup, o.endGroup), cell);
+            value.type = o;
             return false;
-        })) {
-            return {
-                value: text
-            };
-        }
+        })) return {
+            value: text
+        };
         return value;
     }
 };
 /***************************************************************
-*   
+*
 *   FormulaParser
 *
 ***************************************************************/
@@ -2009,6 +2062,7 @@ wxl.DataGrid.getCellName = function(td){
     this.config = config;
     this.init();
 }).prototype = {
+    name: "formula",
     tokenClasses: {
         whitespace: {
             patt: /\s+/,
@@ -2042,7 +2096,7 @@ wxl.DataGrid.getCellName = function(td){
             type: "pre",
             precedence: 80,
             semantics: "$n$r"
-        }, 
+        },
         "^": {
             patt: /\^/,
             type: "binary",
@@ -2098,7 +2152,7 @@ wxl.DataGrid.getCellName = function(td){
             type: "operand"
         },
         str: {
-            patt: /"([^"]|"")*"/,
+            patt: /"(([^"]|"")*)"/,
             type: "operand"
         },
         cell: {
@@ -2124,7 +2178,7 @@ wxl.DataGrid.getCellName = function(td){
             patt = tokenClass.patt.source;
             groups += 1;
             allTokens += "(" + patt + ")";
-            
+
             tokenClass.groups = numGroups(patt);
             tokenTypes[String(groups)] = tokenClass;
             groups += tokenClass.groups;
@@ -2174,7 +2228,7 @@ wxl.DataGrid.getCellName = function(td){
             if (token.type === "separator") continue;
             switch (token.c) {
                 case "str":
-                    token.v = groups[2].replace(/""/, "\"");
+                    token.v = groups[1].replace(/""/, "\"");
                     break;
                 case "num":
                     token.v = Number(groups[0].replace(/,/, ""))
@@ -2185,7 +2239,7 @@ wxl.DataGrid.getCellName = function(td){
                         if (groups[5]) token.colInc = parseInt(groups[5], 10);
                         if (groups[8]) token.rowInc = parseInt(groups[8], 10);
                     }
-                    else 
+                    else
                     if (groups[10]){
                         token.format = "A1";
                         token.fixedCol = (groups[12] ? true : false);
@@ -2196,10 +2250,8 @@ wxl.DataGrid.getCellName = function(td){
                     break;
                 default:
                     token.n = groups[0];
-            }; 
-            if (!isUnd(token.v) || token.type !== "operand") {
-                delete groups;
-            }
+            };
+            delete token.groups;
             token.prevToken = prevToken;
             prevToken.nextToken = token;
             prevToken = token;
@@ -2256,21 +2308,19 @@ wxl.DataGrid.getCellName = function(td){
                 to: oprnd.t
             }
         }
-    }, 
+    },
     reduce: function(prevToken, token) {
         var type = prevToken.type, left, right, arg, args, name;
         if (type === "left") {          //left parenthesis
             arg = prevToken.nextToken;
-                        
+
             if ((name = prevToken.prevToken) && name.c === "name") {    //name precedes left parenthesis: this is a function
                 prevToken.c = "func";
                 prevToken.n = name.groups[0].toUpperCase();
                 prevToken.f = name.f;
-                if (prevToken.prevToken = name.prevToken) {
-                    name.prevToken.nextToken = prevToken;
-                }
+                if (prevToken.prevToken = name.prevToken) name.prevToken.nextToken = prevToken;
                 del(name, "nextToken", "prevToken", "type", "f", "t");
-                
+
                 args = prevToken.a = [];
                 if (arg && arg.type === "operand") {        //unwrap arguments tree to arguments list.
                     while (arg.c === "[,;]") {
@@ -2279,11 +2329,9 @@ wxl.DataGrid.getCellName = function(td){
                     }
                     if (arg) args.unshift(arg);
                 }
-                else {                                      //no arguments, reset so we can find the right parenthesis.
-                    right = arg;
-                }
+                else right = arg;   //no arguments, reset so we can find the right parenthesis.
             }
-            else 
+            else
             if ((!arg) || (arg.type !== "operand")) {       //not a function. In this case, parenthesis cannot be empty
                 this.throwException("Missing operand", prevToken, operand);
             }
@@ -2296,7 +2344,7 @@ wxl.DataGrid.getCellName = function(td){
             if ((!right) || (right.type !== "right")) {
                 this.throwException("Missing right parenthesis", prevToken, right);
             }
-            token = right.nextToken;            
+            token = right.nextToken;
         }
         else {
             if (type !== "pre") {
@@ -2313,22 +2361,16 @@ wxl.DataGrid.getCellName = function(td){
                 this.throwException("Missing right operand", prevToken, right);
             }
         }
-        
+
         if (type !== "post") {
             if (type === "left") {
-                if (prevToken.prevToken) {  //left parentheses spans string up to closing right parentheses
-                    prevToken.t = right.t;
-                }
-                else {                      //for outmost left parentheses, store the closing right parentheses (checksum)
-                    prevToken.r = right;
-                }
+                if (prevToken.prevToken) prevToken.t = right.t  //left parentheses spans string up to closing right parentheses
+                else prevToken.r = right;                       //for outmost left parentheses, store the closing right parentheses (checksum)
             }
-            else {                          //binary and prefix operators store the right argument
-                prevToken.r = right;
-            }
+            else prevToken.r = right;                           //binary and prefix operators store the right argument
+
             prevToken.nextToken = right.nextToken;
             if (right.nextToken) right.nextToken.prevToken = prevToken;
-            
             del(right, "nextToken", "prevToken", "type", "f", "t");
         }
         prevToken.type = "operand";
@@ -2339,7 +2381,7 @@ wxl.DataGrid.getCellName = function(td){
     }
 };
 /***************************************************************
-*   
+*
 *   FormulaSupport
 *
 ***************************************************************/
@@ -2349,7 +2391,7 @@ wxl.DataGrid.getCellName = function(td){
     this.formulas = {
         //map:
         //key = canonical formula text
-        //value = generated id
+        //value = {generated id, refcount}
     };
     this.functions = {
         //maps:
@@ -2360,80 +2402,221 @@ wxl.DataGrid.getCellName = function(td){
     init: function() {
         this.parser = new wxl.FormulaParser();
     },
+    resolveCell: function(rows, cellDef){
+        var cell;
+        switch (cellDef.format) {
+            case "A1":
+                cell = rows.item(cellDef.row).cells.item(cellDef.col);
+                break;
+            case "R1C1":
+                cell = rows.item(
+                    row.rowIndex + (cellDef.rowInc ? cellDef.rowInc : 0)
+                ).cells.item(
+                    cell.cellIndex + (cellDef.colInc ? cellDef.colInc : 0)
+                );
+                break;
+            default:
+                throw "Invalid parameter";
+        }
+        return cell;
+    },
+    getCellRows: function(cell) {
+        return cell.parentNode.parentNode.parentNode.rows;
+    },
+    getDependencies: function(cell){
+        var dependencies = gAtt(cell, "data-dependent-cells");
+        return dependencies ? JSON.parse(dependencies) : [];
+    },
+    sortDependencies: function(cell) {
+        var me = this,
+            allDependencies = me.getAllDependencies(cell),
+            dependencies = [], r, rD, c,
+            rows = me.getCellRows(cell),
+            row
+        ;
+        for (r in allDependencies) {
+            row = rows.item(parseInt(r, 10));
+            rD = allDependencies[r];
+            for (c in rD) {
+                dependencies.push(row.cells.item(parseInt(c, 10)));
+            }
+        }
+        dependencies.sort(function(a, b){
+            allDependencies = me.getAllDependencies(a);
+            c = b.cellIndex;
+            r = b.parentNode.rowIndex;
+            rD = allDependencies[r];
+            if (!rD) return 1;      //if b does not depend on a, evaluate b first
+            if (rD[c]) return -1;   //if b depends upon a, evaluate a first
+            return 1;               //if b does not depend on a, evaluate b first
+        });
+        return dependencies;
+    },
+    updateDependencies: function(cell){
+        var dependencies = this.sortDependencies(cell),
+            i, n = dependencies.length, dependency
+        ;
+        for (i = 0; i < n; i++) {
+            dependency = dependencies[i];
+            this.dataGrid.setCellValue(
+                dependency,
+                this.calculate(dependency),
+                this.valueHelper
+            );
+        }
+    },
+    getAllDependencies: function(cell){
+        var rows = this.getCellRows(cell),
+            cells = [], i = 0, a = {},
+            r, c, rA, dependencies, j, n, dependency;
+        do {
+            dependencies = this.getDependencies(cell);
+            n = dependencies.length;
+            for (j = 0; j < n; j++) {
+                dependency = dependencies[j];
+                r = dependency.r;
+                if (!(rA = a[r])) rA = a[r] = {};
+                c = dependency.c;
+                if (!(rA[c])) {
+                    rA[c] = true;
+                    cells.push(rows.item(r).cells.item(c));
+                }
+            }
+        } while (cell = cells[i++]);
+        return a;
+    },
+    registerCellDependency: function(cell, dependsOn){
+        var circRef = {
+            message: "Circular reference"
+        }
+        if (cell === dependsOn) throw circRef;
+        var dependencies = this.getDependencies(dependsOn),
+            i, dependency, n = dependencies.length,
+            r = cell.parentNode.rowIndex,
+            c = cell.cellIndex,
+            allDependencies, rAllDependencies,
+            cDependencies
+        ;
+        //check if the dependency exists alreay
+        for (i = 0; i < n; i++) {
+            dependency = dependencies[i];
+            if(dependency.r===r && dependency.c===c) return;
+        }
+        //check if it would introduce a circular dependency
+        allDependencies = this.getAllDependencies(cell);
+        rAllDependencies = allDependencies[dependsOn.parentNode.rowIndex];
+        if (rAllDependencies && rAllDependencies[dependsOn.cellIndex]) throw circRef;
+        dependencies.push({r:r, c:c});
+        sAtt(dependsOn, "data-dependent-cells", JSON.stringify(dependencies));
+    },
     calculate: function(cell) {
-        var rows, row, args = [], i, n, id, params, param, paramCell, formula = _gAtt(cell, "data-formula");
+        var formula = gAtt(cell, "data-formula");
         if (!formula) throw "Not a formula";
         formula = JSON.parse(formula);
+
+        var params, n;
         if (params = formula.params) {
-            if (!isArr(params)) throw "Invalid paramers";
+            if (!isArr(params)) throw "Invalid parameters";
+            n = params.length;
         }
-        else params = [];
-        
-        if ((isUnd(id = formula.id))
-        ||  (isUnd(formula = this.formulas[id]))
-        ||  (isUnd(formula = this.functions[formula]))
-        ) throw "Invalid formula";
-        
-        for (i = 0, n = params.length; i < n; i++) {
+        else n = 0;
+
+        var id = formula.id;
+        if (isUnd(id)) throw "Invalid formula";
+        if (isUnd(formula = this.functions[id])) throw "Invalid formula";
+
+        var i, param, paramCell, args=[], rows = this.getCellRows(cell);
+        for (i = 0; i < n; i++) {
             param = params[i];
-            if (param.value) {
+            if (!isUnd(param.value)) {
                 args[i] = param.value;
                 continue;
             }
-            param = param.cell;
-            row = cell.parentNode;
-            rows = row.parentNode.parentNode.rows;
-            switch (param.format) {
-                case "A1":
-                    paramCell = rows.item(param.row).cells.item(param.col);
-                    break;
-                case "R1C1":
-                    paramCell = rows.item(
-                        row.rowIndex + (param.rowInc ? param.rowInc : 0)
-                    ).cells.item(
-                        cell.cellIndex + (param.colInc ? param.colInc : 0)
-                    );
-                    break;
-                default:
-                    throw "Invalid parameter";
-            }
+            paramCell = this.resolveCell(rows, param.cell);
             args[i] = wxl.CellValues.prototype.getCellValue(paramCell);
         }
-        return formula.apply(null, args);
+        return formula.func.apply(null, args);
     },
-    getCellValueHelper: function(){
+    clearFormula: function(cell) {
+        var formula = gAtt(cell, "data-formula");
+        if (!formula) return;
+        formula = JSON.parse(formula);
+        //clean up dependencies
+        var params;
+        if (params = formula.params) {
+            if (!isArr(params)) throw "Invalid parameters";
+            var i, n = params.length, param, paramCell;
+            for (i = 0; i < n; i++){
+                param = params[i];
+                if (isUnd(param.cell)) continue;
+                paramCell = this.resolveCell(rows, param.cell);
+                this.unRegisterCellDependency(cell, paramCell);
+            }
+        }
+        //clean up formula.
+        var id = formula.id,
+            func = this.functions[id],
+            text = func.text;
+        ;
+        formula = this.formulas[text];
+        if (!(--formula.refCount)) {
+            del(this.functions, id);
+            del(func);
+            del(this.formulas, text);
+            del(formula);
+        }
+    },
+    createCellValueHelper: function(){
         var me = this;
-        return {
+        if (!me.valueHelper) me.valueHelper = {
             regexp: /=(.+)/,
+            name: "formula",
             parser: function(arr, cell){
-                var formulas = me.formulas, formulaText, formulaId,
+                var parseTree, params = [], formulaText,
+                    formulas = me.formulas, formula, formulaId,
                     functions = me.functions, func,
-                    parseTree, params = [], 
-                    args = []   , i, n, param,
+                    n, i, param,
+                    dependsOn, rows = me.getCellRows(cell),
                     retValue
                 ;
                 try {
                     parseTree = me.parser.parse(arr[1], cell);
                     formulaText = me.compile(parseTree, params);
-                    if (!(formulaId = me.formulas[formulaText])){
+                    n = params.length;
+                    if (!(formula = me.formulas[formulaText])){
                         //for now, formulaId === formulaText. TODO: compress.
-                        formulaId = (me.formulas[formulaText] = formulaText);
-                        for (i=0, n = params.length; i < n; i++) {
+                        formulaId = formulaText;
+                        me.formulas[formulaText] = {
+                            id: formulaId,
+                            refCount: 1
+                        };
+                        var args = [];
+                        for (i = 0; i < n; i++) {
                             param = params[i];
                             args.push(param.name);
-                            if (!param.cell) continue;
-                            //todo: find the cell
-                            //      mark the current cell as dependant
                         }
                         args.push("return " + formulaText + ";");
                         func = Function.apply(null, args);
-                        functions[formulaId] = func;
+                        functions[formulaId] = {
+                            func: func,
+                            text: formulaText
+                        };
                     }
-                    else func = functions[formulaId];
-                    _sAtt(cell, "data-formula", JSON.stringify({
+                    else {
+                        formula.refCount++;
+                        func = functions[formula.id].func;
+                    }
+                    sAtt(cell, "data-formula", JSON.stringify({
                         id: formulaId,
                         params: params
                     }));
+                    //register dependencies to referenced cells
+                    for (i=0; i < n; i++) {
+                        param = params[i];
+                        if (!param.cell) continue;
+                        dependsOn = me.resolveCell(rows, param.cell);
+                        me.registerCellDependency(cell, dependsOn);
+                    }
                     retValue = {
                         value: me.calculate(cell)
                     };
@@ -2448,7 +2631,8 @@ wxl.DataGrid.getCellName = function(td){
             toText: function(value) {
                 return String(value);
             }
-        }        
+        };
+        return me.valueHelper;
     },
     compile: function(node, params) {
         var tokenClasses = this.parser.tokenClasses,
@@ -2471,22 +2655,19 @@ wxl.DataGrid.getCellName = function(td){
         }
         else {
             s = ""
-            if (tc.type === "operand") {
-                n = "$" + params.length;
-                p = {name: n};
-                if (tc.name === "cell") {
-                    p.cell = node;
-                }
-                else p.value = node.v;
-                params.push(p);
-                s += n;
-            }
+            if (tc.type !== "operand") throw "Unexpected parse node type (not an operand)";
+            n = "$" + params.length;
+            p = {name: n};
+            if (tc.name === "cell") p.cell = node;
+            else p.value = node.v;
+            params.push(p);
+            s += n;
         }
         return s;
     }
 };
 /***************************************************************
-*   
+*
 *   KeyboardNavigable
 *
 ***************************************************************/
@@ -2525,7 +2706,7 @@ wxl.DataGrid.getCellName = function(td){
                     }
                 }
                 break;
-            case 13:    //right                
+            case 13:    //right
                 rowIndex += event.getShiftKey() ? -1 : 1;
                 break;
             case 33:    //page up
@@ -2546,7 +2727,7 @@ wxl.DataGrid.getCellName = function(td){
             case 39:    //right
                 cellIndex++;
                 break;
-            case 38:    //up                
+            case 38:    //up
                 rowIndex--;
                 break;
             case 40:    //down
@@ -2555,7 +2736,7 @@ wxl.DataGrid.getCellName = function(td){
             default:
                 return;
         }
-        event.preventDefault(); 
+        event.preventDefault();
         if (!cellIndex || !rowIndex) {
             return;
         }
@@ -2573,14 +2754,14 @@ wxl.DataGrid.getCellName = function(td){
 };
 
 /***************************************************************
-*   
+*
 *   CellNavigator
 *
 ***************************************************************/
 
 (win["wxl"]["CellNavigator"] = function(config) {
     this.config = config = merge(config, {
-    }); 
+    });
     this.init();
 }).prototype = {
     init: function(){
@@ -2609,7 +2790,7 @@ wxl.DataGrid.getCellName = function(td){
 };
 
 /***************************************************************
-*   
+*
 *   Application
 *
 ***************************************************************/
@@ -2626,26 +2807,26 @@ wxl.DataGrid.getCellName = function(td){
     render: function() {
         var config = this.config,
             container = el(config.id),
-            cellNavigator = "wxl_navigator", 
-            cellEditor = "wxl_editor", 
+            cellNavigator = "wxl_navigator",
+            cellEditor = "wxl_editor",
             dataGrid = "wxl_datagrid"
         ;
         _chs(container, [
-            _crEl(
+            crEl(
                 "DIV", {
                 "class": "wxl_toolbar",
-            }, _crEl("DIV")),
-            _crEl("DIV", {
+            }, crEl("DIV")),
+            crEl("DIV", {
                 "class": "wxl_toolbar",
-            }, _crEl("DIV", null, [
-                _crEl("INPUT", {
+            }, crEl("DIV", null, [
+                crEl("INPUT", {
                     id: cellNavigator
                 }),
-                _crEl("TEXTAREA", {
+                crEl("TEXTAREA", {
                     id: cellEditor
                 }),
             ])),
-            _crEl("DIV", {
+            crEl("DIV", {
                 id: dataGrid,
                 style: {
                     top: "60px",
@@ -2656,7 +2837,7 @@ wxl.DataGrid.getCellName = function(td){
         dataGrid = new wxl.DataGrid(merge({
             div: dataGrid
         }, this.config));
-        
+
         //allow grid to be navigated using the keyboard
         new wxl.KeyboardNavigable({
             dataGrid: dataGrid
@@ -2671,16 +2852,13 @@ wxl.DataGrid.getCellName = function(td){
             dataGrid: dataGrid,
             ddsupport: true
         });
-        
-        //add formula Support
-        var formulaSupport = new wxl.FormulaSupport();
-        
+
         //add a value helper
         new wxl.CellValues({
             dataGrid: dataGrid,
-            patterns: [formulaSupport.getCellValueHelper()]
+            formulaSupport: new wxl.FormulaSupport()
         });
-        
+
         //add a celleditor
         dataGrid.setCellEditor(
             new wxl.CellEditor({
@@ -2694,5 +2872,5 @@ wxl.DataGrid.getCellName = function(td){
         });
     }
 };
- 
+
 })();
