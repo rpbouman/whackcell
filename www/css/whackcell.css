@@ -32,12 +32,12 @@ table > tbody > tr > td {
     border-width: 1px;
     border-color: ThreeDFace;
     white-space: nowrap;
-    position: relative !important;
+    position: relative;
     background-color:white;
     display: table-cell;
 }
 
-div.wxl_datagrid > table > tbody > tr > td > div {
+div.wxl_datagrid > table > tbody > tr > td > span {
     white-space: nowrap;
     height: 100%;
     overflow: visible;
@@ -242,7 +242,7 @@ input.wxl_cellnavigator {
     left: 0px;
 }
 
-td.wxl_editing {
+div.wxl_datagrid > table > tbody > tr > td.wxl_editing {
     border-color: red;
     background-color: blue;
     color: white;
@@ -250,22 +250,25 @@ td.wxl_editing {
 /**
 *   Value support
 */
-td.wxl_datatype_number > div {
+div.wxl_datagrid > table > tbody > tr > td.wxl_datatype_number {
+}
+
+div.wxl_datagrid > table > tbody > tr > td.wxl_datatype_number > span {
     right: 0px;
 }
 
-td.wxl_datatype_string {
+div.wxl_datagrid > table > tbody > tr > td.wxl_datatype_string {
 }
 
-td.wxl_datatype_date {
+div.wxl_datagrid > table > tbody > tr > td.wxl_datatype_date {
 
 }
 
-td.wxl_datatype_error {
+div.wxl_datagrid > table > tbody > tr > td.wxl_datatype_error {
     background-color: red;
 }
 
-td.wxl_datatype_formula {
+div.wxl_datagrid > table > tbody > tr > td.wxl_datatype_formula {
 
 }
 

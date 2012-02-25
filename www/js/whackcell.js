@@ -934,6 +934,7 @@ win["wxl"] = {};
     }
     me.render();
 }).prototype = merge({
+    innerCellTag: "span",
     render: function(){
         var me = this,
             config = me.config,
@@ -964,9 +965,9 @@ win["wxl"] = {};
             ;
             thead += "</th>";
             if (i) {
-                row += "<td class=\"" + className + "\" ><div></div></td>";
+                row += "<td class=\"" + className + "\" ><" + me.innerCellTag + " /></td>";
                 //add style rules to hide cells outside the display range
-                if (i>lastDisplayCol){
+                if (i > lastDisplayCol){
                     styles[stylePrefix2 + className] = {
                         display: "none"
                     };
@@ -976,7 +977,7 @@ win["wxl"] = {};
         tagName = "tr";
         row += "</tr>";
         stylePrefix1 += ".";
-        for (i=1, n = me.numRows; i <= n; i++) {
+        for (i = 1, n = me.numRows; i <= n; i++) {
             className = "r" + i;
             tbody +=
                 "<tr class=\"" + className + "\">" +
@@ -1190,15 +1191,15 @@ win["wxl"] = {};
         this.setCellText(cell, text);
     },
     getCellText: function(cell) {
-        return txt(tag("DIV", cell));
+        return txt(tag(this.innerCellTag, cell));
     },
     setCellText: function(cell, text) {
-        tag("DIV", cell).innerHTML = escXML(text);
+        tag(this.innerCellTag, cell).innerHTML = escXML(text);
     },
     clearCell: function(cell) {
         //TODO: rewrite to use setCellContent
         rAtt(cell, "data-content");
-        tag("DIV", cell).innerHTML = "";
+        tag(this.innerCellTag, cell).innerHTML = "";
     },
     clickHandler: function(e) {
         var target = e.getTarget(),
@@ -1214,11 +1215,15 @@ win["wxl"] = {};
         tagname: switch (target.tagName) {
             case "SPAN":
                 parentNode = target.parentNode;
-                if (parentNode.tagName!=="DIV") {
-                    break;
+                switch (parentNode.tagName) {
+                    case "DIV":
+                    case "TD":
+                        target = parentNode;
+                        className = target.className;
+                        break;
+                    default:
+                        break tagname;
                 }
-                target = parentNode;
-                className = target.className;
                 //fall through
             case "DIV":
                 switch (className) {
@@ -1498,7 +1503,7 @@ wxl.DataGrid.getCellName = function(td){
             sourceCell = sourceCells.item(i);
             targetCell = targetRow.insertCell(i);
             targetCell.className = sourceCell.className;
-            targetCell.appendChild(tag("DIV", sourceCell));
+            targetCell.appendChild(tag(wxl.DataGrid.prototype.innerCellTag, sourceCell));
         }
         this.table.deleteRow(sourceRow.rowIndex);
         for (i = sourceIndex; i !== targetIndex; i += (sourceIndex < targetIndex ? 1 : -1)) {
@@ -1529,7 +1534,7 @@ wxl.DataGrid.getCellName = function(td){
             row = rows.item(i);
             sourceCell = row.cells(sourceIndex);
             targetCell = row.insertCell(targetIndex);
-            targetCell.appendChild(tag("DIV", sourceCell));
+            targetCell.appendChild(tag(wxl.DataGrid.prototype.innerCellTag, sourceCell));
             row.deleteCell(sourceCell.cellIndex);
         }
         if (activeCell) {
