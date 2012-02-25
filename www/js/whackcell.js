@@ -1,4 +1,4 @@
-(function(){
+﻿(function(){
 
 var doc = document,
     body = doc.body,
@@ -2068,7 +2068,7 @@ wxl.DataGrid.getCellName = function(td){
     this.init();
 }).prototype = {
     name: "formula",
-    tokenClasses: {
+	tokenClasses: {
         whitespace: {
             patt: /\s+/,
             type: "separator"
@@ -2077,72 +2077,72 @@ wxl.DataGrid.getCellName = function(td){
             patt: /:/,
             type: "binary",
             precedence: 90,
-            semantics: "Range($l,$r)"
+            semantics: "Range(_l,_r)"
         },
         "~": {
             patt: /~/,
             type: "binary",
             precedence: 90,
-            semantics: "Intersect($l,$r)"
+            semantics: "Intersect(_l,_r)"
         },
         "!": {
             patt: /!/,
             type: "binary",
             precedence: 90,
-            semantics: "Union($l,$r)"
+            semantics: "Union(_l,_r)"
         },
         "%": {
             patt: /%/,
             type: "post",
             precedence: 80,
-            semantics: "($l/100)"
+            semantics: "(_l/100)"
         },
         "unop": {
             type: "pre",
             precedence: 80,
-            semantics: "$n$r"
+            semantics: "_n_r"
         },
         "^": {
             patt: /\^/,
             type: "binary",
             precedence: 70,
-            semantics: "$l$n$r"
+            semantics: "_l_n_r"
         },
         "[*\/]": {
             patt: /[\*\/]/,
             type: "binary",
             precedence: 60,
-            semantics: "$l$n$r"
+            semantics: "_l_n_r"
         },
         "[+-]": {
             patt: /[+-]/,
             type: "binary",
             precedence: 50,
-            semantics: "$l$n$r"
+            semantics: "_l_n_r"
         },
         "&": {
             patt: /&/,
             type: "binary",
             precedence: 40,
-            semantics: "String($l)+String($r)"
+            semantics: "String(_l)+String(_r)"
         },
         relop: {
             patt: /<=|>=|<>|>|<|=/,
             type: "binary",
             precedence: 30,
-            semantics: "$l$n$r"
+            semantics: "_l_n_r"
         },
         "[,;]": {
             patt: /[,;]/,
             type: "binary",
             precedence: 20,
-            semantics: "$l,$r"
+            semantics: "_l,_r"
         },
         "(": {
             patt: /\(/,
             type: "left",
             precedence: 10,
-            semantics: "($a)"
+            semantics: "(_a)"
         },
         ")": {
             patt: /\)/,
@@ -2150,7 +2150,7 @@ wxl.DataGrid.getCellName = function(td){
             precedence: 10
         },
         func: {
-            semantics: "$n($a)"
+            semantics: "_n(_a)"
         },
         num: {
             patt: /[+-]?((((\d+)|(\d{1,3}(,\d{3})+))(\.\d*)?)|(\.\d+))([eE][+-]?\d+)?/,
@@ -2642,26 +2642,27 @@ wxl.DataGrid.getCellName = function(td){
     compile: function(node, params) {
         var tokenClasses = this.parser.tokenClasses,
             tc = tokenClasses[node.c],
-            s, p, a, i, n
+            s, p, a, c
         ;
         if (s = tc.semantics) {
-            if (a = node.l) s = s.replace(/\$l/g, this.compile(a, params));
-            if (a = node.r) s = s.replace(/\$r/g, this.compile(a, params));
-            if (a = node.n) s = s.replace(/\$n/g, a);
+            if (a = node.l) s = s.replace(/_l/g, this.compile(a, params));
+            if (a = node.r) s = s.replace(/_r/g, this.compile(a, params));
+            if (a = node.n) s = s.replace(/_n/g, a);
             if (a = node.a) {
                 if (isArr(a)){
-                    for (var t = "", i=0, n = a.length; i < n; i++) {
+					var t = "", i = 0, n = a.length;
+                    for (; i < n; i++) {
                         if (t.length) t += ",";
                         t += this.compile(a[i], params);
                     }
                 }
-                else s = s.replace(/\$r/g, this.compile(a, params));
+                else s = s.replace(/_r/g, this.compile(a, params));
             }
         }
         else {
             s = ""
             if (tc.type !== "operand") throw "Unexpected parse node type (not an operand)";
-            n = "$" + params.length;
+            n = "_" + params.length;
             p = {name: n};
             if (tc.name === "cell") p.cell = node;
             else p.value = node.v;
