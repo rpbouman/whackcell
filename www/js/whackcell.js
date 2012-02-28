@@ -353,18 +353,19 @@ function hAtt(e, a){
 }
 
 function cAtts(source, target) {
-    var i, atts, n, name;
+    var i, atts, att, n, name;
     atts = target.attributes;
     n = atts.length;
     for (i = 0; i < n; i++) {
-        name = atts.nodeName;
+        name = atts[i].nodeName;
         if (!hAtt(source, name)) rAtt(target, name);
     }
     atts = source.attributes;
     n = atts.length;
     for (i = 0; i < n; i++) {
-        name = atts.nodeName;
-        sAtt(target, name, gAtt(source, name));
+        att = atts[i];
+        name = att.nodeName;
+        sAtt(target, name, att.value);
     }
 };
 
