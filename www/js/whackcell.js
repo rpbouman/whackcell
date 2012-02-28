@@ -1800,6 +1800,7 @@ wxl.DataGrid.getCellName = function(td){
         me.textarea.select();
     },
     stopEditing: function() {
+        if (!this.editing) return;
         var dataGrid = this.dataGrid,
             cell = this.cell,
             textarea = this.textarea
@@ -2615,46 +2616,51 @@ wxl.DataGrid.getCellName = function(td){
             regexp: /=(.+)/,
             name: "formula",
             parser: function(arr, cell){
-                var parseTree, params = [], formulaText,
-                    formulas = me.formulas, formula, formulaId,
-                    functions = me.functions, func,
+                var parseTree,
+                    formulaId, formulaText, formula,
+                    formulas = me.formulas,
+                    functions = me.functions,
+                    params = [],
                     n, i, param,
-                    dependsOn, rows = me.getCellRows(cell),
+                    dependsOn,
+                    rows = me.getCellRows(cell),
                     retValue
                 ;
                 try {
                     parseTree = me.parser.parse(arr[1], cell);
                     formulaText = me.compile(parseTree, params);
                     n = params.length;
-                    if (!(formula = me.formulas[formulaText])){
+                    if (!(formula = formulas[formulaText])){
                         //for now, formulaId === formulaText. TODO: compress.
                         formulaId = formulaText;
-                        me.formulas[formulaText] = {
+                        formula = {
                             id: formulaId,
                             refCount: 1
                         };
+                        formulas[formulaText] = formula;
                         var args = [];
                         for (i = 0; i < n; i++) {
                             param = params[i];
                             args.push(param.name);
                         }
                         args.push("return " + formulaText + ";");
-                        func = Function.apply(null, args);
                         functions[formulaId] = {
-                            func: func,
-                            text: formulaText
+                            text: formulaText,
+                            func: Function.apply(null, args)
                         };
                     }
                     else {
+                        formulaId = formula.id;
                         formula.refCount++;
-                        func = functions[formula.id].func;
                     }
+
                     sAtt(cell, "data-formula", JSON.stringify({
                         id: formulaId,
                         params: params
                     }));
+
                     //register dependencies to referenced cells
-                    for (i=0; i < n; i++) {
+                    for (i = 0; i < n; i++) {
                         param = params[i];
                         if (!param.cell) continue;
                         dependsOn = me.resolveCell(rows, param.cell);
