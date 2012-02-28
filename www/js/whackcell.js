@@ -1179,7 +1179,7 @@ win["wxl"] = {};
                 display: "none"
             });
         }
-        
+
         //Rows
         if (rowIndex < firstDisplayRow) {
             config.firstDisplayRow = i = rowIndex;
@@ -1921,8 +1921,11 @@ wxl.DataGrid.getCellName = function(td){
         return false;
     },
     syncCell: function() {
-        var dataGrid = this.dataGrid;
-        dataGrid.setCellText(dataGrid.getActiveCell(), this.textarea.value);
+        var dataGrid = this.dataGrid,
+            activeCell = dataGrid.getActiveCell()
+        ;
+        dataGrid.setCellText(activeCell, "");
+        dataGrid.setCellText(activeCell, this.textarea.value);
     },
     focus: function(){
         this.textarea.focus();
