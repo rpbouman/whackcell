@@ -336,17 +336,37 @@ function sAtts(e, atts){
     }
 }
 
-function sAtt(e, att, val){
-    el(e).setAttribute(att, val);
+function sAtt(e, a, v){
+    el(e).setAttribute(a, v);
 }
 
-function gAtt(e, att){
-    return el(e).getAttribute(att);
+function gAtt(e, a){
+    return el(e).getAttribute(a);
 }
 
-function rAtt(e, att){
-    el(e).removeAttribute(att);
+function rAtt(e, a){
+    el(e).removeAttribute(a);
 }
+
+function hAtt(e, a){
+    return el(e).hasAttribute(a);
+}
+
+function cAtts(source, target) {
+    var i, atts, n, name;
+    atts = target.attributes;
+    n = atts.length;
+    for (i = 0; i < n; i++) {
+        name = atts.nodeName;
+        if (!hAtt(source, name)) rAtt(target, name);
+    }
+    atts = source.attributes;
+    n = atts.length;
+    for (i = 0; i < n; i++) {
+        name = atts.nodeName;
+        sAtt(target, name, gAtt(source, name));
+    }
+};
 
 function chs(e, chs) {
     var m;
@@ -934,7 +954,6 @@ win["wxl"] = {};
     }
     me.render();
 }).prototype = merge({
-    innerCellTag: "span",
     render: function(){
         var me = this,
             config = me.config,
@@ -955,7 +974,7 @@ win["wxl"] = {};
         stylePrefix2 = stylePrefix1 + " > ."
         for (i=0, n = me.numCols; i <= n; i++) {
             className = "c" + i;
-            thead += "<th class=\"" + className + "\" scope=\"col\">";
+            thead += "<th class=\"" + className + "\" scope=\"col\" style=\"width:54px\">";
             thead +=
                 "<div class=\"wxl_header wxl_column_header\">" +
                     (i ? "<span>" + wxl.DataGrid.getColumnHeaderName(i-1) + "</span>" +
@@ -965,7 +984,7 @@ win["wxl"] = {};
             ;
             thead += "</th>";
             if (i) {
-                row += "<td class=\"" + className + "\" ><" + me.innerCellTag + " /></td>";
+                row += "<td class=\"" + className + "\" ></td>";
                 //add style rules to hide cells outside the display range
                 if (i > lastDisplayCol){
                     styles[stylePrefix2 + className] = {
@@ -980,7 +999,7 @@ win["wxl"] = {};
         for (i = 1, n = me.numRows; i <= n; i++) {
             className = "r" + i;
             tbody +=
-                "<tr class=\"" + className + "\">" +
+                "<tr class=\"" + className + "\" style=\"height: 16px;\">" +
                 "<th class=\"th\" scope=\"row\" >" +
                     "<div class=\"wxl_header wxl_row_header\">" +
                         "<span>" + i + "</span>" +
@@ -1117,72 +1136,6 @@ win["wxl"] = {};
         }
     },
     scrollIntoView: function(td) {
-        var style = this.stylesheet,
-            cellIndex = td.cellIndex,
-            rowIndex = td.parentNode.rowIndex,
-            len, inc, diff,
-            config = this.config,
-            numDisplayCols = config.numDisplayCols,
-            firstDisplayCol = config.firstDisplayCol,
-            lastDisplayCol = firstDisplayCol + numDisplayCols - 1,
-            numDisplayRows = config.numDisplayRows,
-            firstDisplayRow = config.firstDisplayRow,
-            lastDisplayRow = firstDisplayRow + numDisplayRows - 1,
-            id = this.container.id,
-            stylePrefix1 = "#" + id + " > TABLE > * > TR"
-        ;
-        if (cellIndex < firstDisplayCol) {
-            config.firstDisplayCol = cellIndex;
-            len = firstDisplayCol;
-            inc = 1;
-            len = cellIndex + inc * numDisplayCols;
-            diff = inc + inc * numDisplayCols;
-        }
-        else
-        if (cellIndex > lastDisplayCol) {
-            config.firstDisplayCol = cellIndex - numDisplayCols + 1;
-            len = lastDisplayCol; 
-            inc = -1;
-            diff = inc * numDisplayCols;
-        }
-        else {
-            cellIndex = len;
-            diff = inc * numDisplayCols;
-        }
-        for (; cellIndex != len; cellIndex += inc) {
-            style.applyStyle(stylePrefix1 + " > .c" + cellIndex, {
-                display: ""
-            });
-            style.applyStyle(stylePrefix1 + " > .c" + (cellIndex + diff), {
-                display: "none"
-            });
-        }
-
-        if (rowIndex < firstDisplayRow) {
-            config.firstDisplayRow = rowIndex;
-            len = firstDisplayRow;
-            inc = 1;
-        }
-        else
-        if (rowIndex > lastDisplayRow) {
-            config.firstDisplayRow = rowIndex - numDisplayRows + 1;
-            len = lastDisplayRow;
-            inc = -1;
-        }
-        else {
-            rowIndex = len;
-        }
-        diff = inc * numDisplayRows;
-        for (; rowIndex != len; rowIndex += inc) {
-            style.applyStyle(stylePrefix1 + ".r" + rowIndex, {
-                display: ""
-            });
-            style.applyStyle(stylePrefix1 + ".r" + (rowIndex + diff), {
-                display: "none"
-            });
-        }
-    },
-    scrollIntoView: function(td) {
         var config = this.config,
             numDisplayCols = config.numDisplayCols,
             firstDisplayCol = config.firstDisplayCol,
@@ -1267,15 +1220,19 @@ win["wxl"] = {};
         this.setCellText(cell, text);
     },
     getCellText: function(cell) {
-        return txt(tag(this.innerCellTag, cell));
+        return txt(cell);
     },
     setCellText: function(cell, text) {
-        tag(this.innerCellTag, cell).innerHTML = escXML(text);
+        cell.innerHTML = escXML(text);
     },
     clearCell: function(cell) {
         //TODO: rewrite to use setCellContent
         rAtt(cell, "data-content");
-        tag(this.innerCellTag, cell).innerHTML = "";
+        cell.innerHTML = "";
+    },
+    copyCell: function(sourceCell, targetCell) {
+        cAtts(sourceCell, targetCell);
+        targetCell.innerHTML = sourceCell.innerHTML;
     },
     clickHandler: function(e) {
         var target = e.getTarget(),
@@ -1518,7 +1475,7 @@ wxl.DataGrid.getCellName = function(td){
                     clientDim = targetParent.clientHeight;
                     newDim = clientDim + (pos.y - startPos.y);
                     minDim = target.clientHeight;
-                    targetParent.style.height = (newDim >= minDim ? newDim : minDim) + "px";
+                    targetParent.parentNode.parentNode.style.height = targetParent.parentNode.style.height = targetParent.style.height = (newDim >= minDim ? newDim : minDim) + "px";
                 }
                 else
                 if (hasClass(target, "wxl_resize_horizontal")) {
@@ -1526,6 +1483,7 @@ wxl.DataGrid.getCellName = function(td){
                     newDim = clientDim + (pos.x - startPos.x);
                     minDim = target.clientWidth;
                     targetParent.style.width = (newDim >= minDim ? newDim : minDim) + "px";
+                    targetParent.parentNode.style.width = ((newDim >= minDim ? newDim : minDim) + 4) + "px"
                 }
                 dataGrid.getKBHandler().focus();
             }
@@ -1580,8 +1538,7 @@ wxl.DataGrid.getCellName = function(td){
         for (i = 1; i<n; i++) {
             sourceCell = sourceCells.item(i);
             targetCell = targetRow.insertCell(i);
-            targetCell.className = sourceCell.className;
-            targetCell.appendChild(tag(wxl.DataGrid.prototype.innerCellTag, sourceCell));
+            this.copyCell(sourceCell, targetCell);
         }
         this.table.deleteRow(sourceRow.rowIndex);
         for (i = sourceIndex; i !== targetIndex; i += (sourceIndex < targetIndex ? 1 : -1)) {
@@ -1610,9 +1567,9 @@ wxl.DataGrid.getCellName = function(td){
         }
         for (var i = 1; i < n; i++){
             row = rows.item(i);
-            sourceCell = row.cells(sourceIndex);
+            sourceCell = row.cells.item(sourceIndex);
             targetCell = row.insertCell(targetIndex);
-            targetCell.appendChild(tag(wxl.DataGrid.prototype.innerCellTag, sourceCell));
+            this.copyCell(sourceCell, targetCell);
             row.deleteCell(sourceCell.cellIndex);
         }
         if (activeCell) {

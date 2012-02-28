@@ -25,6 +25,13 @@ div.wxl_datagrid > table {
     border-color: ThreeDLightShadow ThreeDDarkShadow ThreeDDarkShadow ThreeDLightShadow;
     position: relative;
     table-layout: fixed;
+    width:0px;
+    height: 0px;
+}
+
+div.wxl_datagrid > table > tbody > tr {
+    height: 0px;
+    overflow: hidden;
 }
 
 div.wxl_datagrid > table > tbody > tr > td {
@@ -32,9 +39,9 @@ div.wxl_datagrid > table > tbody > tr > td {
     border-width: 1px;
     border-color: ThreeDFace;
     white-space: nowrap;
-    background-color:white;
-	display: table-cell;
-    position: static;
+    background-color: white;
+    overflow: hidden;
+    padding: 1px;
 }
 
 div.wxl_datagrid > table > tbody > tr > td > span {
@@ -126,6 +133,7 @@ div.wxl_datagrid > table > tbody > tr > th.wxl_active > div {
 div.wxl_datagrid > table > tbody > tr > td.wxl_active {
     border-style: solid;
     border-width: 2px;
+    padding: 0px;
     border-color: ThreeDShadow;
 }
 
@@ -242,8 +250,8 @@ input.wxl_cellnavigator {
     left: 0px;
 }
 
-div.wxl_datagrid > table > tbody > tr > td.wxl_editing {
-    border-color: red;
+div.wxl_datagrid > table > tbody > tr > td.wxl_editing,
+div.wxl_datagrid > table > tbody > tr > td.wxl_editing > span {
     background-color: blue;
     color: white;
 }
