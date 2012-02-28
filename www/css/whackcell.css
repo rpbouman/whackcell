@@ -27,23 +27,23 @@ div.wxl_datagrid > table {
     table-layout: fixed;
 }
 
-table > tbody > tr > td {
+div.wxl_datagrid > table > tbody > tr > td {
     border-style: none solid solid none;
     border-width: 1px;
     border-color: ThreeDFace;
     white-space: nowrap;
-    position: relative;
     background-color:white;
-    display: table-cell;
+	display: table-cell;
+    position: static;
 }
 
 div.wxl_datagrid > table > tbody > tr > td > span {
     white-space: nowrap;
-    height: 100%;
-    overflow: visible;
+    overflow: hidden;
     position: absolute;
     margin-top: -10px;
     padding: 2px;
+	background-color:white;
 }
 
 div.wxl_datagrid > table > tbody > tr > th,
@@ -251,10 +251,10 @@ div.wxl_datagrid > table > tbody > tr > td.wxl_editing {
 *   Value support
 */
 div.wxl_datagrid > table > tbody > tr > td.wxl_datatype_number {
+	text-align: right;
 }
 
-div.wxl_datagrid > table > tbody > tr > td.wxl_datatype_number > span {
-    right: 0px;
+div.wxl_datagrid > table > tbody > tr > td.wxl_datatype_number  > span {
 }
 
 div.wxl_datagrid > table > tbody > tr > td.wxl_datatype_string {

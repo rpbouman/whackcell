@@ -348,7 +348,7 @@ function rAtt(e, att){
     el(e).removeAttribute(att);
 }
 
-function _chs(e, chs) {
+function chs(e, chs) {
     var m;
     e = el(e);
     if (!isArr(chs)) chs = [chs];
@@ -359,11 +359,11 @@ function _chs(e, chs) {
     }
 }
 
-function crEl(tag, atts, chs, p){
+function crEl(tag, atts, ch, p){
     var el = doc.createElement(tag);
     if (atts) sAtts(el, atts);
-    if (chs) _chs(el, chs);
-    if (p) _chs(p, el);
+    if (ch) chs(el, ch);
+    if (p) chs(p, el);
     return el;
 }
 
@@ -1097,9 +1097,7 @@ win["wxl"] = {};
     setActiveCell: function(td){
         var activeCell;
         if (activeCell = this.activeCell) {
-            if (this.fireEvent("beforecelldeactivated", activeCell)===false) {
-                return;
-            }
+            if (this.fireEvent("beforecelldeactivated", activeCell)===false) return;
             removeClass([
                 activeCell,
                 this.getColumnHeader(activeCell.cellIndex),
@@ -1137,17 +1135,20 @@ win["wxl"] = {};
             config.firstDisplayCol = cellIndex;
             len = firstDisplayCol;
             inc = 1;
+            len = cellIndex + inc * numDisplayCols;
+            diff = inc + inc * numDisplayCols;
         }
         else
         if (cellIndex > lastDisplayCol) {
             config.firstDisplayCol = cellIndex - numDisplayCols + 1;
-            len = lastDisplayCol;
+            len = lastDisplayCol; 
             inc = -1;
+            diff = inc * numDisplayCols;
         }
         else {
             cellIndex = len;
+            diff = inc * numDisplayCols;
         }
-        diff = inc * numDisplayCols;
         for (; cellIndex != len; cellIndex += inc) {
             style.applyStyle(stylePrefix1 + " > .c" + cellIndex, {
                 display: ""
@@ -1177,6 +1178,81 @@ win["wxl"] = {};
                 display: ""
             });
             style.applyStyle(stylePrefix1 + ".r" + (rowIndex + diff), {
+                display: "none"
+            });
+        }
+    },
+    scrollIntoView: function(td) {
+        var config = this.config,
+            numDisplayCols = config.numDisplayCols,
+            firstDisplayCol = config.firstDisplayCol,
+            lastDisplayCol = firstDisplayCol + numDisplayCols - 1,
+            numDisplayRows = config.numDisplayRows,
+            firstDisplayRow = config.firstDisplayRow,
+            lastDisplayRow = firstDisplayRow + numDisplayRows - 1,
+            cellIndex = td.cellIndex,
+            rowIndex = td.parentNode.rowIndex,
+            i, n, j, m,
+            style = this.stylesheet,
+            id = this.container.id,
+            stylePrefix1 = "#" + id + " > TABLE > * > TR"
+        ;
+        //cols:
+        if (cellIndex < firstDisplayCol) {
+            config.firstDisplayCol = i = cellIndex;
+            n = Math.min(i + numDisplayCols, firstDisplayCol);
+            j = Math.max(i + numDisplayCols, firstDisplayCol);
+            m = lastDisplayCol + 1;
+        }
+        else
+        if (cellIndex > lastDisplayCol) {
+            n = cellIndex + 1;
+            config.firstDisplayCol = i = n - numDisplayCols;
+            j = firstDisplayCol;
+            m = Math.min(j + numDisplayCols, i);
+        }
+        else {
+            i = n = 0;
+        }
+        //unhide the new column window
+        for (; i < n; i++) {
+            style.applyStyle(stylePrefix1 + " > .c" + i, {
+                display: ""
+            });
+        }
+        //hide the old column window
+        for (; j < m; j++) {
+            style.applyStyle(stylePrefix1 + " > .c" + j, {
+                display: "none"
+            });
+        }
+        
+        //Rows
+        if (rowIndex < firstDisplayRow) {
+            config.firstDisplayRow = i = rowIndex;
+            n = Math.min(i + numDisplayRows, firstDisplayRow);
+            j = Math.max(i + numDisplayRows, firstDisplayRow);
+            m = lastDisplayRow + 1;
+        }
+        else
+        if (rowIndex > lastDisplayRow) {
+            n = rowIndex + 1;
+            config.firstDisplayRow = i = n - numDisplayRows;
+            j = firstDisplayRow;
+            m = Math.min(j + numDisplayRows, i)
+        }
+        else {
+            i = n = 0;
+        }
+        //unhide the new row window
+        for (; i < n; i++) {
+            style.applyStyle(stylePrefix1 + ".r" + i, {
+                display: ""
+            });
+        }
+        //hide the old row window
+        for (; j < m; j++) {
+            style.applyStyle(stylePrefix1 + ".r" + j, {
                 display: "none"
             });
         }
@@ -1336,25 +1412,27 @@ wxl.DataGrid.getCellName = function(td){
         }
     },
     setColumnWidth: function(index, width) {
-        var div = tag("DIV", this.getColumnHeader(index)),
+        var th = this.getColumnHeader(index),
+            div = tag("DIV", th),
             sizer = tag("DIV", div)
         ;
         if (sizer && width < sizer.clientWidth) {
             width = sizer.clientWidth;
         }
-        div.style.width = width + "px";
+        th.style.width = div.style.width = width + "px";
     },
     getColumnWidth: function(index) {
         return tag("DIV", this.getColumnHeader(index)).clientWidth;
     },
     setRowHeight: function(index, height) {
-        var div = tag("DIV", this.getRowHeader(index)),
+        var th = this.getRowHeader(index),
+            div = tag("DIV", th),
             sizer = tag("DIV", div)
         ;
         if (sizer && width < sizer.clientHeight) {
             height = sizer.clientHeight;
         }
-        div.style.height = height + "px";
+        th.style.height = div.style.height = height + "px";
     },
     getRowHeight: function(index) {
         return tag("DIV", this.getRowHeader(index)).clientHeight;
@@ -2068,7 +2146,7 @@ wxl.DataGrid.getCellName = function(td){
     this.init();
 }).prototype = {
     name: "formula",
-	tokenClasses: {
+    tokenClasses: {
         whitespace: {
             patt: /\s+/,
             type: "separator"
@@ -2650,7 +2728,7 @@ wxl.DataGrid.getCellName = function(td){
             if (a = node.n) s = s.replace(/_n/g, a);
             if (a = node.a) {
                 if (isArr(a)){
-					var t = "", i = 0, n = a.length;
+                    var t = "", i = 0, n = a.length;
                     for (; i < n; i++) {
                         if (t.length) t += ",";
                         t += this.compile(a[i], params);
@@ -2743,17 +2821,11 @@ wxl.DataGrid.getCellName = function(td){
                 return;
         }
         event.preventDefault();
-        if (!cellIndex || !rowIndex) {
-            return;
-        }
+        if (!cellIndex || !rowIndex) return;
         row = rows.item(rowIndex);
-        if (!row) {
-            return;
-        }
+        if (!row) return;
         cell = row.cells.item(cellIndex);
-        if (!cell){
-            return;
-        }
+        if (!cell) return;
         dataGrid.setActiveCell(cell);
         return false;
     }
@@ -2817,7 +2889,7 @@ wxl.DataGrid.getCellName = function(td){
             cellEditor = "wxl_editor",
             dataGrid = "wxl_datagrid"
         ;
-        _chs(container, [
+        chs(container, [
             crEl(
                 "DIV", {
                 "class": "wxl_toolbar",
