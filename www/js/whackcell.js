@@ -736,12 +736,8 @@ var KBHandler;
         });
     },
     focus: function() {
-        if (this.fireEvent("focus")) {;
-            this.textArea.focus();
-        }
-        else {
-            return false;
-        }
+        if (this.fireEvent("focus") !== false) this.textArea.focus();
+        else return false;
     }
 }, Observable.prototype);
 
@@ -1232,17 +1228,10 @@ win["wxl"] = {};
         targetCell.innerHTML = sourceCell.innerHTML;
     },
     clickHandler: function(e) {
-        console.log("enter clickHandler");
         var target = e.getTarget(),
             className = target.className,
             parentNode
         ;
-        if (this.kbHandler.focus() === false) {
-            if (this.cellEditor) {
-                this.cellEditor.focus();
-            }
-            return false;
-        }
         tagname: switch (target.tagName) {
             case "SPAN":
                 parentNode = target.parentNode;
@@ -1285,6 +1274,7 @@ win["wxl"] = {};
                 }
                 //fall through
             case "TD":
+                if (this.fireEvent("click", target)===false) return;
                 this.setActiveCell(target);
 /*
                 if (!e.getCtrlKey()) {
@@ -1294,7 +1284,12 @@ win["wxl"] = {};
 */
                 break;
         }
-        console.log("exit clickHandler");
+        if (this.getKBHandler().focus() === false) {
+            if (this.cellEditor) {
+                this.cellEditor.focus();
+            }
+            return false;
+        }
     },
     setCellEditor: function(cellEditor) {
         cellEditor.initDataGrid(this);
@@ -1748,9 +1743,9 @@ wxl.DataGrid.getCellName = function(td){
     initDataGrid: function(dataGrid){
         dataGrid.cellEditor = this;
         dataGrid.listen("cellactivated", this.cellActivated, this);
+        dataGrid.listen("click", this.cellClicked, this);
         var kbHandler = dataGrid.getKBHandler();
         kbHandler.listen("keydown", this.dataGridKeyDownHandler, this);
-        kbHandler.listen("focus", this.dataGridFocusHandler, this);
     },
     render: function() {
         var me = this,
@@ -1767,28 +1762,38 @@ wxl.DataGrid.getCellName = function(td){
     setEnabled: function(enabled) {
         this.textarea.disabled = !enabled;
     },
+    cellClicked: function(dataGrid, event, cell){
+        if (!this.editing) return;
+        var textarea = this.textarea,
+            value = textarea.value
+        ;
+        //TODO: detect if we currently have formula support,
+        //use a nicer check to see if we're editing a formula
+        if (value.charAt(0) !== "=") return this.stopEditing();
+        var pos = textarea.selectionStart,
+            s = value.substr(0, pos),
+            e = value.substr(textarea.selectionEnd),
+            cellName = wxl.DataGrid.getCellName(cell)
+        ;
+        textarea.value = s + cellName + e;
+        textarea.selectionStart = textarea.selectionEnd = pos + cellName.length;
+        this.syncCell();
+        this.focus();
+        return false;
+    },
     cellActivated: function(dataGrid, event, cell){
-        console.log("enter cellActivated");
         var textarea = this.textarea;
         if (this.isEditing() && cell !== this.cell) {
-            var s = textarea.selectionStart,
-                e = textarea.selectionEnd,
-                v = textarea.value
-            ;
-            textarea.value = value.substr(0, s) + wxl.DataGrid.getCellName(cell) + value.substr(e);
+            this.stopEditing();
         }
-        else {
-          this.dataGrid = dataGrid;
-          this.cell = cell;
-          textarea.value = dataGrid.getCellContent(cell);
-        }
-        console.log("exit cellActivated");
+        this.dataGrid = dataGrid;
+        this.cell = cell;
+        textarea.value = dataGrid.getCellContent(cell);
     },
     isEditing: function() {
         return this.editing;
     },
     startEditing: function(dataGrid, event, cell) {
-        console.log("enter startEditing");
         var me = this;
         me.dataGrid = dataGrid;
         me.cell = cell;
@@ -1799,10 +1804,8 @@ wxl.DataGrid.getCellName = function(td){
         addClass(cell, "wxl_editing");
         me.textarea.select();
         if (event !== "focus" ) me.focus();
-        console.log("exit startEditing");
     },
     stopEditing: function() {
-        console.log("enter stopEditing");
         if (!this.editing) return;
         var dataGrid = this.dataGrid,
             cell = this.cell,
@@ -1824,11 +1827,7 @@ wxl.DataGrid.getCellName = function(td){
             debugger;
             stopEditing = false;
         }
-        console.log("exit stopEditing");
         return stopEditing;
-    },
-    dataGridFocusHandler: function(kbHandler, type, event){
-        return this.stopEditing();
     },
     dataGridKeyDownHandler: function(kbHandler, type, event){
         var keyCode = event.getKeyCode();
@@ -1938,7 +1937,7 @@ wxl.DataGrid.getCellName = function(td){
     focusHandler: function(e) {
         var dataGrid = this.dataGrid, cell;
         if (dataGrid &&  (cell = dataGrid.getActiveCell())) {
-            this.startEditing(dataGrid, "focus", cell);
+            //this.startEditing(dataGrid, "focus", cell);
         }
     },
     clickHandler: function(e) {
@@ -2806,7 +2805,6 @@ wxl.DataGrid.getCellName = function(td){
 *   CellNavigator
 *
 ***************************************************************/
-
 (win["wxl"]["CellNavigator"] = function(config) {
     this.config = config = merge(config, {
     });
