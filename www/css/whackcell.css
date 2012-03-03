@@ -75,7 +75,6 @@ div.wxl_datagrid > table > tbody > tr > th > div.wxl_header {
 }
 
 div.wxl_datagrid > table > thead > tr > th > div.wxl_column_header {
-    width:50px;
     text-align: center;
     height: 16px;
     position: relative;
