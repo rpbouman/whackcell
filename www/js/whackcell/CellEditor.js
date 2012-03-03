@@ -22,7 +22,10 @@ var CellEditor;
             textarea = el(me.config.textarea)
         ;
         me.editing = false;
-        textarea.className = "wxl_celleditor";
+        sAtts(textarea, {
+            class: "wxl_celleditor",
+            autocomplete: "off"
+        });
         listen(textarea, "keydown", me.keydownHandler, me);
         listen(textarea, "keyup", me.keyupHandler, me);
         listen(textarea, "focus", me.focusHandler, me);

@@ -19,8 +19,11 @@ var CellNavigator;
         var me = this,
             input = el(me.config.input)
         ;
-        input.size = 4;
-        input.className = "wxl_cellnavigator";
+        sAtts(input, {
+            size: 4,
+            class: "wxl_cellnavigator",
+            autocomplete: "off"
+        });
         listen(input, "change", this.changeHandler, this);
         listen(input, "focus", this.focusHandler, this);
         this.input = input;
