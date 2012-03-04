@@ -14,7 +14,7 @@ var FormulaSupport;
         //key = canonical formula text
         //value = {generated id, refcount}
     };
-    this.functions = {
+    this.compiledFunctions = {
         //maps:
         //key = formula id (values in formulas map)
         //value = compiled formula (function)
@@ -144,7 +144,7 @@ var FormulaSupport;
 
         var id = formula.id;
         if (isUnd(id)) throw "Invalid formula";
-        if (isUnd(formula = this.functions[id])) throw "Invalid formula";
+        if (isUnd(formula = this.compiledFunctions[id])) throw "Invalid formula";
 
         var i, param, paramCell, args=[], rows = this.getCellRows(cell);
         for (i = 0; i < n; i++) {
@@ -176,12 +176,12 @@ var FormulaSupport;
         }
         //clean up formula.
         var id = formula.id,
-            func = this.functions[id],
+            func = this.compiledFunctions[id],
             text = func.text;
         ;
         formula = this.formulas[text];
         if (!(--formula.refCount)) {
-            del(this.functions, id);
+            del(this.compiledFunctions, id);
             del(func);
             del(this.formulas, text);
             del(formula);
@@ -196,7 +196,7 @@ var FormulaSupport;
                 var parseTree,
                     formulaId, formulaText, formula,
                     formulas = me.formulas,
-                    functions = me.functions,
+                    compiledFunctions = me.compiledFunctions,
                     params = [],
                     n, i, param,
                     dependsOn,
@@ -221,7 +221,7 @@ var FormulaSupport;
                             args.push(param.name);
                         }
                         args.push("return " + formulaText + ";");
-                        functions[formulaId] = {
+                        compiledFunctions[formulaId] = {
                             text: formulaText,
                             func: Function.apply(null, args)
                         };
@@ -269,16 +269,17 @@ var FormulaSupport;
             if (a = node.l) s = s.replace(/_l/g, this.compile(a, params));
             if (a = node.r) s = s.replace(/_r/g, this.compile(a, params));
             if (a = node.n) s = s.replace(/_n/g, a);
-            if (a = node.a) s = s.replace(/_a/g, a);
             if (a = node.a) {
+                var t = "";
                 if (isArr(a)){
-                    var t = "", i = 0, n = a.length;
+                    var i = 0, n = a.length;
                     for (; i < n; i++) {
                         if (t.length) t += ",";
                         t += this.compile(a[i], params);
                     }
                 }
-                else s = s.replace(/_r/g, this.compile(a, params));
+                else t = this.compile(a, params);
+                s = s.replace(/_a/g, t);
             }
         }
         else {
@@ -489,10 +490,10 @@ var FormulaParser;
                 default:
                     token.n = groups[0];
             };
-            //delete token.groups;
             token.prevToken = prevToken;
             prevToken.nextToken = token;
             prevToken = token;
+            delete token.groups;
         } while (token.t < length);
         token = {
             type: rparen.type,
@@ -554,10 +555,10 @@ var FormulaParser;
 
             if ((name = prevToken.prevToken) && name.c === "name") {    //name precedes left parenthesis: this is a function
                 prevToken.c = "func";
-                prevToken.n = name.groups[0].toUpperCase();
+                prevToken.n = name.n.toUpperCase();
                 prevToken.f = name.f;
                 if (prevToken.prevToken = name.prevToken) name.prevToken.nextToken = prevToken;
-                del(name, "nextToken", "prevToken", "type", "f", "t");
+                del(name, "nextToken", "prevToken", "type");
 
                 args = prevToken.a = [];
                 if (arg && arg.type === "operand") {        //unwrap arguments tree to arguments list.
@@ -566,6 +567,7 @@ var FormulaParser;
                         arg = arg.l;
                     }
                     if (arg) args.unshift(arg);
+                    right = token;
                 }
                 else right = arg;   //no arguments, reset so we can find the right parenthesis.
             }
@@ -576,7 +578,7 @@ var FormulaParser;
             else {                                          //parenthesis not empty, store contents.
                 prevToken.a = arg;
                 right = arg.nextToken;
-                del(arg, "nextToken", "prevToken", "type", "f", "t");
+                del(arg, "nextToken", "prevToken", "type");
             }
 
             if ((!right) || (right.type !== "right")) {

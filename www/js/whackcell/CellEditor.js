@@ -1,6 +1,7 @@
 define(function(require) {
 
 require("js/utils.js");
+var DataGrid = require("js/whackcell/DataGrid.js");
 
 var CellEditor;
 (CellEditor = function(config) {
@@ -46,7 +47,7 @@ var CellEditor;
         var pos = textarea.selectionStart,
             s = value.substr(0, pos),
             e = value.substr(textarea.selectionEnd),
-            cellName = wxl.DataGrid.getCellName(cell)
+            cellName = DataGrid.getCellName(cell)
         ;
         textarea.value = s + cellName + e;
         textarea.selectionStart = textarea.selectionEnd = pos + cellName.length;
@@ -97,7 +98,7 @@ var CellEditor;
             stopEditing = true;
         } catch (exception) {
             alert(exception.message||exception);
-            debugger;
+//            debugger;
             stopEditing = false;
         }
         return stopEditing;
