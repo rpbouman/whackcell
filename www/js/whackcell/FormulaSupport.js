@@ -269,6 +269,7 @@ var FormulaSupport;
             if (a = node.l) s = s.replace(/_l/g, this.compile(a, params));
             if (a = node.r) s = s.replace(/_r/g, this.compile(a, params));
             if (a = node.n) s = s.replace(/_n/g, a);
+            if (a = node.a) s = s.replace(/_a/g, a);
             if (a = node.a) {
                 if (isArr(a)){
                     var t = "", i = 0, n = a.length;
@@ -488,7 +489,7 @@ var FormulaParser;
                 default:
                     token.n = groups[0];
             };
-            delete token.groups;
+            //delete token.groups;
             token.prevToken = prevToken;
             prevToken.nextToken = token;
             prevToken = token;
