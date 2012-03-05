@@ -202,7 +202,6 @@ var CellEditor;
         var dataGrid = this.dataGrid,
             activeCell = dataGrid.getActiveCell()
         ;
-        dataGrid.setCellText(activeCell, "");
         dataGrid.setCellText(activeCell, this.textarea.value);
     },
     focus: function(){

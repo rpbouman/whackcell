@@ -290,6 +290,9 @@ var DataGrid;
         return txt(cell);
     },
     setCellText: function(cell, text) {
+        //clear out the text first.
+        //we found this was required to ensure the new value is rendered by the browser,
+        cell.innerHTML = "";
         cell.innerHTML = escXML(text);
     },
     clearCell: function(cell) {
