@@ -7,6 +7,7 @@ var CellValues = require("js/whackcell/CellValues.js");
 
 var FormulaSupport;
 (FormulaSupport = function(config) {
+    if (!config) config = {};
     this.config = config;
     this.init();
     this.formulas = {
@@ -19,9 +20,10 @@ var FormulaSupport;
         //key = formula id (values in formulas map)
         //value = compiled formula (function)
     };
+    this.parser = new FormulaParser();
+    this.runtime = config.moduleManager ? config.moduleManager.getRuntime() : null;
 }).prototype = {
     init: function() {
-        this.parser = new FormulaParser();
     },
     resolveCell: function(rows, cellDef){
         var cell;
@@ -156,7 +158,7 @@ var FormulaSupport;
             paramCell = this.resolveCell(rows, param.cell);
             args[i] = CellValues.prototype.getCellValue(paramCell);
         }
-        return formula.func.apply(null, args);
+        return formula.func.apply(this.runtime, args);
     },
     clearFormula: function(cell) {
         var formula = gAtt(cell, "data-formula");
@@ -268,7 +270,10 @@ var FormulaSupport;
         if (s = tc.semantics) {
             if (a = node.l) s = s.replace(/_l/g, this.compile(a, params));
             if (a = node.r) s = s.replace(/_r/g, this.compile(a, params));
-            if (a = node.n) s = s.replace(/_n/g, a);
+            if (a = node.n) {
+                if (node.c === "func") a = "this." + a;
+                s = s.replace(/_n/g, a);
+            }
             if (a = node.a) {
                 var t = "";
                 if (isArr(a)){
