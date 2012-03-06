@@ -7,7 +7,8 @@ var CellValues;
     this.config = config;
     this.init();
 }).prototype = {
-    clsPrefix: "wxl_datatype_",
+    CSS_PREFIX: "wxl_datatype_",
+    ERROR_TEXT: "#VALUE!",
     init: function() {
         var config = this.config,
             dataGrid = config.dataGrid,
@@ -26,6 +27,7 @@ var CellValues;
         dataGrid.getCellContent = this.getCellContent;
         dataGrid.setCellValue = this.setCellValue;
         dataGrid.getCellValue = this.getCellValue;
+        dataGrid.setCellError = this.setCellError;
         pattern = "";
         this.patterns = merge(patterns, config.patterns || CellValues.patterns);
         forPinO(this.patterns, function(p, o){
@@ -47,30 +49,39 @@ var CellValues;
             value = obj.value,
             type = obj.type,
             typeName,
-            clsPrefix = valueHelper.clsPrefix,
+            CSS_PREFIX = valueHelper.CSS_PREFIX,
             className = cell.className = normalizeSpace(cell.className.replace(
-                new RegExp("\\b" + clsPrefix + "\\w+\\b", "g"),
+                new RegExp("\\b" + CSS_PREFIX + "\\w+\\b", "g"),
                 ""
             ))
         ;
-        if (obj.error) {
-            cell.className = normalizeSpace(className + " " + clsPrefix + "error");
-            throw obj.error;
-        }
+        if (value.error) this.setCellError(cell, obj);
         sAtt(cell, "data-content", content);
         this.setCellValue(cell, value, type);
         if (formulaSupport) formulaSupport.updateDependencies(cell);
+    },
+    setCellError: function(cell, error) {
+        var valueHelper = this.valueHelper,
+            CSS_PREFIX = valueHelper.CSS_PREFIX,
+            className = cell.className = normalizeSpace(cell.className.replace(
+            new RegExp("\\b" + CSS_PREFIX + "\\w+\\b", "g"),
+            ""
+        ));
+        cell.className = normalizeSpace(className + " " + CSS_PREFIX + "error");
+        this.setCellText(cell, valueHelper.ERROR_TEXT);
+        cell.value = error;
+        throw error;
     },
     setCellValue: function(cell, value, type) {
         var className = cell.className,
             typeName,
             valueHelper = this.valueHelper,
-            clsPrefix = valueHelper.clsPrefix
+            CSS_PREFIX = valueHelper.CSS_PREFIX
         ;
         cell.value = value;
         if (type) {
             typeName = type.name;
-            className = className + " " + clsPrefix + typeName;
+            className = className + " " + CSS_PREFIX + typeName;
             if (typeName === "formula") {
                 typeName = typeof(value);
                 switch(typeName) {
@@ -85,7 +96,7 @@ var CellValues;
                     default:
                         typeName = null;
                 }
-                if (typeName) className += " " + clsPrefix + typeName;
+                if (typeName) className += " " + CSS_PREFIX + typeName;
             }
             cell.className = normalizeSpace(className);
             value = type.toText(value);
