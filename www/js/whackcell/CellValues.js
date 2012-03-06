@@ -76,9 +76,10 @@ var CellValues;
                 switch(typeName) {
                     case "string":
                     case "number":
+                    case "boolean":
                         break;
                     case "object":
-                        if (value.constructor == Date) typename = "date";
+                        if (value.constructor === Date) typename = "date";
                         else typeName = null;
                         break;
                     default:
@@ -152,6 +153,24 @@ CellValues.patterns = {
         },
         toText: function(value) {
             return String(value);
+        }
+    },
+    boolean: {
+        regexp: /([Ff][Aa][Ll][Ss][Es])|([Tt][Rr][Uu][Ee])/,
+        parser: function(arr){
+            var value = {};
+            switch(arr[0].toLowerCase()) {
+                case "true":
+                  value.value = true;
+                  break;
+                case "false":
+                  value.value = false;
+                  break;
+            }
+            return value;
+        },
+        toText: function(value){
+            return String(value).toUpperCase();
         }
     }
 };
