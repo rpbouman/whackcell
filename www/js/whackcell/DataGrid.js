@@ -296,9 +296,7 @@ var DataGrid;
         cell.innerHTML = escXML(text);
     },
     clearCell: function(cell) {
-        //TODO: rewrite to use setCellContent
-        rAtt(cell, "data-content");
-        cell.innerHTML = "";
+        this.setCellContent(cell, "");
     },
     copyCell: function(sourceCell, targetCell) {
         cAtts(sourceCell, targetCell);
