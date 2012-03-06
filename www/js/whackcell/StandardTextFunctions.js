@@ -65,6 +65,7 @@ return {
                 }
             ],
             function: function(text) {
+                if (typeof(text)!=="string") text = String(text);
                 return text.replace(/[\x00-\x20]/g, "");
             }
         },
@@ -83,6 +84,7 @@ return {
               description: "Displays the numeric code for A (65)"
             },
             function: function(text) {
+                if (typeof(text)!=="string") text = String(text);
                 return text.charCodeAt(0);
             }
         },
@@ -202,6 +204,7 @@ return {
                             error: "start_num must be a number"
                         };
                 }
+                if (typeof(within)!=="string") within = String(text);
                 if (!r) {
                     r = within.indexOf(find, start);
                     if (r === -1) r = {
@@ -290,11 +293,27 @@ return {
                 if (!(num_chars >= 0)) return {
                     error: "num_chars must be greater than or equal to zero."
                 }
+                if (typeof(text)!=="string") text = String(text);
                 return text.substr(0, num_chars);
             }
         },
+        LEN: {
+            description: "Returns the number of characters in a text string",
+            help: "LEN returns the number of characters in a text string.",
+            arguments: [
+                {
+                    name: "text",
+                    description: "is the text whose length you want to find. Spaces count as characters.",
+                    type: "string"
+                }
+            ],
+            function: function(text) {
+                if (typeof(text)!=="string") text = String(text);
+                return text.length;
+            }
+        },
         LOWER: {
-            description: "Returns the leftmost characters from a text value",
+            description: "Converts text to lowercase",
             help: "Converts all uppercase letters in a text string to lowercase.",
             arguments: [
                 {
@@ -304,9 +323,348 @@ return {
                 }
             ],
             function: function(text) {
+                if (typeof(text)!=="string") text = String(text);
                 return text.toLowerCase();
             }
-        }
+        },
+        MID: {
+            description: "Returns a specific number of characters from a text string starting at the position you specify",
+            help: "MID returns a specific number of characters from a text string, starting at the position you specify, based on the number of characters you specify.",
+            arguments: [
+                {
+                    name: "text",
+                    description: "is the text string containing the characters you want to extract.",
+                    type: "string"
+                },
+                {
+                    name: "start_num",
+                    description: "is the position of the first character you want to extract in text. The first character in text has start_num 1, and so on.",
+                    type: "number"
+                },
+                {
+                    name: "Num_chars",
+                    description: "specifies the number of characters you want MID to return from text.",
+                    type: "number"
+                }
+            ],
+            remarks: [
+                "If start_num is greater than the length of text, MID returns \"\" (empty text).",
+                "If start_num is less than the length of text, but start_num plus num_chars exceeds the length of text, MID returns the characters up to the end of text.",
+                "If start_num is less than 1, MID returns the #VALUE! error value.",
+                "If num_chars is negative, MID returns the #VALUE! error value.",
+                "If num_bytes is negative, MIDB returns the #VALUE! error value."
+            ],
+            function: function(text, start, num) {
+                if (start < 1) return {
+                    error: "start_num is less than 1"
+                }
+                else
+                if (num < 0) return {
+                    error: "num_chars is negative"
+                }
+                if (typeof(text)!=="string") text = String(text);
+                return text.substr(start - 1, num);
+            }
+        },
+        PHONETIC: {
+            description: "Extracts the phonetic (furigana) characters from a text string",
+            help: "Extracts the phonetic (furigana) characters from a text string.",
+            arguments: [
+                {
+                    name: "reference",
+                    description: "is a text string or a reference to a single cell or a range of cells that contain a furigana text string.",
+                    type: "string"
+                }
+            ],
+            remarks: [
+                "If reference is a range of cells, the furigana text string in the upper-left corner cell of the range is returned.",
+                "If the reference is a range of nonadjacent cells, the #N/A error value is returned."
+            ]
+        },
+        PROPER: {
+            description: "Capitalizes the first letter in each word of a text value",
+            help: "Capitalizes the first letter in a text string and any other letters in text that follow any character other than a letter. Converts all other letters to lowercase letters.",
+            arguments: [
+                {
+                    name: "text",
+                    description: "is text enclosed in quotation marks, a formula that returns text, or a reference to a cell containing the text you want to partially capitalize.",
+                    type: "string"
+                }
+            ],
+            function: function(text) {
+                if (typeof(text)!=="string") text = String(text);
+                return text.toLowerCase().replace(/\b\w/g, function(match){
+                    return match.toUpperCase();
+                });
+            }
+        },
+        REPLACE: {
+            description: "Replaces characters within text",
+            help: "REPLACE replaces part of a text string, based on the number of characters you specify, with a different text string.",
+            arguments: [
+                {
+                    name: "old_text",
+                    description: "is text in which you want to replace some characters.",
+                    type: "string"
+                },
+                {
+                    name: "start_num",
+                    description: " is the position of the character in old_text that you want to replace with new_text.",
+                    type: "number"
+                },
+                {
+                    name: "num_chars",
+                    description: " is the number of characters in old_text that you want REPLACE to replace with new_text.",
+                    type: "number"
+                },
+                {
+                    name: "new_text",
+                    description: "is the text that will replace characters in old_text.",
+                    type: "string"
+                }
+            ],
+            function: function(old_text, start_num, num_chars, new_text) {
+                if (start_num < 1) return {
+                    error: "start_num is less than 1"
+                }
+                else
+                if (num_chars < 0) return {
+                    error: "num_chars is negative"
+                }
+                if (typeof(old_text)!=="string") old_text = String(old_text);
+                start_num -= 1;
+                return old_text.substr(0, start_num) + new_text + old_text.substr(start_num + num_chars);
+            }
+        },
+        REPT: {
+            description: "Repeats text a given number of times",
+            help: "Repeats text a given number of times. Use REPT to fill a cell with a number of instances of a text string.",
+            arguments: [
+                {
+                    name: "text",
+                    description: "is the text you want to repeat.",
+                    type: "string"
+                },
+                {
+                    name: "number_times",
+                    description: "is a positive number specifying the number of times to repeat text.",
+                    type: "number"
+                }
+            ],
+            remarks: [
+                "If number_times is 0 (zero), REPT returns \"\" (empty text).",
+                "If number_times is not an integer, it is truncated."
+            ],
+            function: function(text, number_times) {
+                if (typeof(text) !== "string") text = String(text);
+                if (isNaN(number_times = parseInt(number_times))) number_times = 0;
+                var ret = "";
+                for (var i = 0; i < number_times; i++){
+                    ret += text;
+                }
+                return ret;
+            }
+        },
+        RIGHT: {
+            description: "Returns the rightmost characters from a text value",
+            help: "RIGHT returns the last character or characters in a text string, based on the number of characters you specify.",
+            arguments: [
+                {
+                    name: "text",
+                    description: "is the text string containing the characters you want to extract.",
+                    type: "string"
+                },
+                {
+                    name: "num_chars",
+                    description: "specifies the number of characters you want RIGHT to extract.",
+                    type: "number"
+                }
+            ],
+            remarks: [
+                "Num_chars must be greater than or equal to zero.",
+                "If num_chars is greater than the length of text, RIGHT returns all of text.",
+                "If num_chars is omitted, it is assumed to be 1."
+            ],
+            function: function(text, num_chars) {
+                if (typeof(num_chars)==="undefined") num_chars = 1;
+                if (!(num_chars >= 0)) return {
+                    error: "num_chars must be greater than or equal to zero."
+                }
+                if (typeof(text)!=="string") text = String(text);
+                var offset;
+                if ((offset = text.length - num_chars) < 0) offset = 0;
+                return text.substr(offset, num_chars);
+            }
+        },
+        SEARCH: {
+            description: "Finds one text value within another (not case-sensitive)",
+            help: "SEARCH locates one text string within a second text string, and returns the number of the starting position of the first text string from the first character of the second text string.",
+            arguments: [
+                {
+                    name: "find_text",
+                    description: "is the text you want to find.",
+                    type: "string"
+                },
+                {
+                    name: "within_text",
+                    description: "is the text in which you want to search for find_text.",
+                    type: "string"
+                },
+                {
+                    name: "start_num",
+                    description: " is the character number in within_text at which you want to start searching.",
+                    type: "number"
+                }
+            ],
+            remarks: [
+                "Use SEARCH and SEARCHB to determine the location of a character or text string within another text string so that you can use the MID and MIDB or REPLACE and REPLACEB functions to change the text.",
+                "SEARCH and SEARCHB are not case sensitive. If you want to do a case sensitive search, you can use FIND and FINDB.",
+                "You can use the wildcard characters, question mark (?) and asterisk (*), in find_text. A question mark matches any single character; an asterisk matches any sequence of characters. If you want to find an actual question mark or asterisk, type a tilde (~) before the character.",
+                "If find_text is not found, the #VALUE! error value is returned.",
+                "If start_num is omitted, it is assumed to be 1.",
+                "If start_num is not greater than 0 (zero) or is greater than the length of within_text, the #VALUE! error value is returned.",
+                "Use start_num to skip a specified number of characters. Using SEARCH as an example, suppose you are working with the text string \"AYF0093.YoungMensApparel\". To find the number of the first \"Y\" in the descriptive part of the text string, set start_num equal to 8 so that the serial-number portion of the text is not searched. SEARCH begins with character 8, finds find_text at the next character, and returns the number 9. SEARCH always returns the number of characters from the start of within_text, counting the characters you skip if start_num is greater than 1."
+            ],
+            function: function(find_text, within_text, start_num) {
+                if (typeof(within_text) !== "string") within_text = String(within_text);
+                if (typeof(find_text) !== "string") find_text = String(find_text);
+                if (typeof(start_num) === "undefined") start_num = 1;
+                //TODO: implement
+                return {
+                    error: "Not yet implemented"
+                };
+            }
+        },
+        SUBSTITUTE: {
+            description: "Finds one text value within another (not case-sensitive)",
+            help: "Substitutes new_text for old_text in a text string. Use SUBSTITUTE when you want to replace specific text in a text string; use REPLACE when you want to replace any text that occurs in a specific location in a text string.",
+            arguments: [
+                {
+                    name: "text",
+                    description: "is the text or the reference to a cell containing text for which you want to substitute characters.",
+                    type: "string"
+                },
+                {
+                    name: "old_text",
+                    description: "is the text you want to replace.",
+                    type: "string"
+                },
+                {
+                    name: "new_text",
+                    description: "is the text you want to replace old_text with.",
+                    type: "string"
+                },
+                {
+                    name: "instance_num",
+                    description: "specifies which occurrence of old_text you want to replace with new_text. If you specify instance_num, only that instance of old_text is replaced. Otherwise, every occurrence of old_text in text is changed to new_text.",
+                    type: "number"
+                }
+            ],
+            function: function() {
+                if (typeof(text) !== "string") text = String(text);
+                if (typeof(old_text) !== "string") old_text = String(old_text);
+                switch (typeof(new_text)) {
+                    case "undefined":
+                        new_text = "";
+                        break;
+                    default:
+                        new_text = String(new_text);
+                }
+                //TODO: implement
+                return {
+                    error: "Not yet implemented"
+                };
+            }
+        },
+        T: {
+            description: "Converts its arguments to text",
+            help: "Returns the text referred to by value.",
+            arguments: [
+                {
+                    name: "value",
+                    description: "is the value you want to test.",
+                    type: "any"
+                }
+            ],
+            remarks: [
+                "If value is or refers to text, T returns value. If value does not refer to text, T returns \"\" (empty text).",
+                "You do not generally need to use the T function in a formula because Microsoft Excel automatically converts values as necessary. This function is provided for compatibility with other spreadsheet programs."
+            ],
+            function: function(value) {
+                return typeof(value)==="string" ? value : "";
+            }
+        },
+        TEXT: {
+            description: "Formats a number and converts it to text",
+            help: "Converts a value to text in a specific number format.",
+            arguments: [
+                {
+                    name: "value",
+                    description: "is a numeric value, a formula that evaluates to a numeric value, or a reference to a cell containing a numeric value.",
+                    type: "number"
+                },
+                {
+                    name: "format_text ",
+                    description: "is a numeric format as a text string enclosed in quotation marks. You can see various numeric formats by clicking the Number, Date, Time, Currency, or Custom in the Category box of the Number tab in the Format Cells dialog box, and then viewing the formats displayed.",
+                    type: "string"
+                }
+            ],
+            remarks: [
+                "Format_text cannot contain an asterisk (*).",
+                "Formatting a cell with an option on the Number tab (Cells command, Format menu) changes only the format, not the value. Using the TEXT function converts a value to formatted text, and the result is no longer calculated as a number."
+            ],
+            function: function(value, format_text) {
+                //TODO: implement
+                return {
+                    error: "Not implemented"
+                };
+            }
+        },
+        TRIM: {
+            description: "Removes spaces from text",
+            help: "Removes all spaces from text except for single spaces between words. Use TRIM on text that you have received from another application that may have irregular spacing.",
+            arguments: [
+                {
+                    name: "text",
+                    description: "is the text from which you want spaces removed.",
+                    type: "string"
+                }
+            ],
+            function: function(text) {
+                if (typeof(text) !== "string") text = String(text);
+                return text.replace(/^\s*|\s*$/, "");
+            }
+        },
+        UPPER: {
+            description: "Converts text to uppercase",
+            help: "Converts all lowercase letters in a text string to uppercase.",
+            arguments: [
+                {
+                    name: "text",
+                    description: "is the text you want to convert to uppercase. UPPER does not change characters in text that are not letters.",
+                    type: "string"
+                }
+            ],
+            function: function(text) {
+                if (typeof(text)!=="string") text = String(text);
+                return text.toUpperCase();
+            }
+        },
+        VALUE: {
+            description: "",
+            help: "Converts a text string that represents a number to a number.",
+            arguments: [
+                {
+                    name: "text",
+                    description: "is the text enclosed in quotation marks or a reference to a cell containing the text you want to convert.",
+                    type: "string"
+                }
+            ],
+            remarks: [
+                "Text can be in any of the constant number, date, or time formats recognized by Microsoft Excel. If text is not in one of these formats, VALUE returns the #VALUE! error value.",
+                "You do not generally need to use the VALUE function in a formula because Excel automatically converts text to numbers as necessary. This function is provided for compatibility with other spreadsheet programs."
+            ]
+        },
     }
 }
 
