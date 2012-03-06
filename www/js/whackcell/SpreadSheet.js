@@ -1,9 +1,8 @@
 define(function(require){
 
 require("js/utils.js");
-
-var DataGrid = require("js/whackcell/DataGrid.js")
-var Range = require("js/whackcell/Range.js")
+var DataGrid = require("js/whackcell/DataGrid.js");
+var Range = require("js/whackcell/Range.js");
 var Movable = require("js/whackcell/Movable.js");
 var Resizable = require("js/whackcell/Resizable.js");
 var KeyboardNavigable = require("js/whackcell/KeyboardNavigable.js");
@@ -11,6 +10,8 @@ var CellEditor = require("js/whackcell/CellEditor.js");
 var CellNavigator = require("js/whackcell/CellNavigator.js");
 var CellValues = require("js/whackcell/CellValues.js");
 var FormulaSupport = require("js/whackcell/FormulaSupport.js");
+var FunctionModuleManager = require("js/whackcell/FunctionModuleManager.js");
+var standardTextFunctions = require("js/whackcell/StandardTextFunctions.js");
 
 var SpreadSheet;
 
@@ -76,7 +77,13 @@ var SpreadSheet;
         //add a value helper
         new CellValues({
             dataGrid: dataGrid,
-            formulaSupport: new FormulaSupport()
+            formulaSupport: new FormulaSupport({
+                moduleManager: new FunctionModuleManager({
+                    modules: [
+                      standardTextFunctions
+                    ]
+                })
+            })
         });
 
         //add a celleditor
