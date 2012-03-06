@@ -592,6 +592,7 @@ var FormulaParser;
                         arg = arg.l;
                     }
                     if (arg) args.unshift(arg);
+                    del(arg, "nextToken", "prevToken");
                     right = token;
                 }
                 else right = arg;   //no arguments, reset so we can find the right parenthesis.
@@ -639,10 +640,11 @@ var FormulaParser;
             del(right, "nextToken", "prevToken", "type", "f", "t");
         }
         prevToken.type = "operand";
-        return {
+        var r = {
             prevToken: prevToken.prevToken,
             token: token
         };
+        return r;
     }
 };
 
