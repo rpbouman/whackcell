@@ -97,7 +97,13 @@ var CellEditor;
             this.dataGrid = null;
             stopEditing = true;
         } catch (exception) {
-            alert(exception.message||exception);
+            exception = JSON.stringify(exception)
+            if (isUnd(console)) {
+                alert(exception);
+            }
+            else {
+                console.log(exception);
+            }
 //            debugger;
             stopEditing = false;
         }
