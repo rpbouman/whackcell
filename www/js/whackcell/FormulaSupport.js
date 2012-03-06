@@ -271,7 +271,15 @@ var FormulaSupport;
             if (a = node.l) s = s.replace(/_l/g, this.compile(a, params));
             if (a = node.r) s = s.replace(/_r/g, this.compile(a, params));
             if (a = node.n) {
-                if (node.c === "func") a = "this." + a;
+                switch (node.c) {
+                    case "func":
+                      a = "this." + a;
+                      break;
+                    case "relop0":
+                    case "relop2":
+                      a = "=" + a;
+                      break;
+                }
                 s = s.replace(/_n/g, a);
             }
             if (a = node.a) {
@@ -365,8 +373,20 @@ var FormulaParser;
             precedence: 40,
             semantics: "String(_l)+String(_r)"
         },
-        relop: {
-            patt: /<=|>=|<>|>|<|=/,
+        relop0: {
+            patt: /==/,
+            type: "binary",
+            precedence: 30,
+            semantics: "_l_n_r"
+        },
+        relop1: {
+            patt: /<=|>=|<>|>|</,
+            type: "binary",
+            precedence: 30,
+            semantics: "_l_n_r"
+        },
+        relop2: {
+            patt: /=/,
             type: "binary",
             precedence: 30,
             semantics: "_l_n_r"
