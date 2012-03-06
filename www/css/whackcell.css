@@ -38,7 +38,7 @@ div.wxl_datagrid > table > tbody > tr > td {
     border-style: none solid solid none;
     border-width: 1px;
     border-color: ThreeDFace;
-    white-space: nowrap;
+    white-space: pre!important;
     background-color: white;
     overflow: hidden;
     padding: 1px;
