@@ -210,7 +210,7 @@ var CellEditor;
     focusHandler: function(e) {
         var dataGrid = this.dataGrid, cell;
         if (dataGrid &&  (cell = dataGrid.getActiveCell())) {
-            //this.startEditing(dataGrid, "focus", cell);
+            this.startEditing(dataGrid, "focus", cell);
         }
     },
     clickHandler: function(e) {
