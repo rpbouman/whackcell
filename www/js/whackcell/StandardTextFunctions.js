@@ -146,7 +146,7 @@ return {
                 }
             ],
             function: function(text1, text2){
-                return text1===text2;
+                return text1 === text2;
             }
         },
         FIND: {
@@ -246,7 +246,7 @@ return {
                 if (typeof(decimals)==="undefined") decimals = 2;
                 if (decimals < 0) decimals = 0;
                 number = (number).toFixed(decimals);
-                if (no_commas !== "TRUE") {
+                if (no_commas !== true) {
                     var str, i = number.length;
                     if (decimals) {
                         str = "." + number.substr(i - decimals);
@@ -664,8 +664,8 @@ return {
                 "Text can be in any of the constant number, date, or time formats recognized by Microsoft Excel. If text is not in one of these formats, VALUE returns the #VALUE! error value.",
                 "You do not generally need to use the VALUE function in a formula because Excel automatically converts text to numbers as necessary. This function is provided for compatibility with other spreadsheet programs."
             ]
-        },
+        }
     }
-}
+};
 
 });
