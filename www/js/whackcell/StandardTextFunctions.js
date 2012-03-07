@@ -2,6 +2,10 @@ define(function(require){
 
 //see http://office.microsoft.com/en-us/excel-help/excel-functions-by-category-HP005204211.aspx#BMtext_functions
 
+function escapeRegex(string) {
+    return string.replace(/[\\\^\$\*\+\?\.\(\)\[\]\{\}]/g, "\\$&");
+}
+
 return {
     name: "Text",
     description: "Functions for manipulating text.",
@@ -537,7 +541,9 @@ return {
         },
         SUBSTITUTE: {
             description: "Finds one text value within another (not case-sensitive)",
-            help: "Substitutes new_text for old_text in a text string. Use SUBSTITUTE when you want to replace specific text in a text string; use REPLACE when you want to replace any text that occurs in a specific location in a text string.",
+            help: "Substitutes new_text for old_text in a text string."+
+                  " Use SUBSTITUTE when you want to replace specific text in a text string;"+
+                  " use REPLACE when you want to replace any text that occurs in a specific location in a text string.",
             arguments: [
                 {
                     name: "text",
@@ -560,20 +566,32 @@ return {
                     type: "number"
                 }
             ],
-            function: function() {
+            function: function(text, old_text, new_text, instance_num) {
                 if (typeof(text) !== "string") text = String(text);
                 if (typeof(old_text) !== "string") old_text = String(old_text);
+                old_text = escapeRegex(old_text);
+                var re = new RegExp(old_text, "gim");
                 switch (typeof(new_text)) {
                     case "undefined":
                         new_text = "";
+                        //intentionally fall through
+                    case "string":
                         break;
                     default:
                         new_text = String(new_text);
                 }
-                //TODO: implement
-                return {
-                    error: "Not yet implemented"
-                };
+                if (typeof(instance_num)==="number") {
+                    var match, i = 0;
+                    instance_num += 1;
+                    while ((instance_num > ++i) && (match = re.exec(text)));
+                    if (match && instance_num === i) {
+                        text = text.substr(0, match.index) + new_text + text.substr(match.index + old_text.length);
+                    }
+                }
+                else {
+                    text = text.replace(re, new_text);
+                }
+                return text;
             }
         },
         T: {
