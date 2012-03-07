@@ -13,6 +13,7 @@ var FormulaSupport = require("js/whackcell/FormulaSupport.js");
 var FunctionModuleManager = require("js/whackcell/FunctionModuleManager.js");
 var standardTextFunctions = require("js/whackcell/StandardTextFunctions.js");
 var standardDateTimeFunctions = require("js/whackcell/StandardDateTimeFunctions.js");
+var standardMathFunctions = require("js/whackcell/StandardMathFunctions.js");
 
 var SpreadSheet;
 
@@ -82,7 +83,8 @@ var SpreadSheet;
                 moduleManager: new FunctionModuleManager({
                     modules: [
                       standardTextFunctions,
-                      standardDateTimeFunctions
+                      standardDateTimeFunctions,
+                      standardMathFunctions
                     ]
                 })
             })
