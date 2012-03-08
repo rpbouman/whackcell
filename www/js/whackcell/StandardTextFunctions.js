@@ -157,7 +157,7 @@ return {
             description: "Finds one text value within another (case-sensitive)",
             help: "FIND locates one text string within a second text string, and return the number of the starting position of the first text string from the first character of the second text string.",
             remarks: [
-                "FIND is case sensitive and don't allow wildcard characters. If you don't want to do a case sensitive search or use wildcard characters, you can use SEARCH.",
+                "FIND is case sensitive and doesn't allow wildcard characters. If you don't want to do a case sensitive search or use wildcard characters, you can use SEARCH.",
                 "If find_text is \"\" (empty text), FIND matches the first character in the search string (that is, the character numbered start_num or 1).",
                 "Find_text cannot contain any wildcard characters.",
                 "If find_text does not appear in within_text, FIND returns the #VALUE! error value.",
@@ -532,11 +532,23 @@ return {
             function: function(find_text, within_text, start_num) {
                 if (typeof(within_text) !== "string") within_text = String(within_text);
                 if (typeof(find_text) !== "string") find_text = String(find_text);
+
                 if (typeof(start_num) === "undefined") start_num = 1;
-                //TODO: implement
-                return {
-                    error: "Not yet implemented"
+                else
+                if (start_num < 1 || start_num > within_text.length) return {
+                    error: "Invalid position"
                 };
+                find_text = escapeRegex(find_text).replace(/\\[\?\*]/g, function(match){
+                    var ret = ".";
+                    if (match === "\\\\*") ret += "*";
+                    return ret;
+                });
+                find_text = new RegExp(find_text, "ig");
+                find_text.lastIndex = start_num - 1;
+                var match;
+                return (match = find_text.exec(within_text)) === null ?  {
+                    error: "Not found"
+                } : match.index + 1;
             }
         },
         SUBSTITUTE: {
