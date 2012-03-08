@@ -353,7 +353,7 @@ var FormulaParser;
             patt: /\^/,
             type: "binary",
             precedence: 70,
-            semantics: "_l_n_r"
+            semantics: "Math.pow(_l,_r)"
         },
         "[*\/]": {
             patt: /[\*\/]/,
