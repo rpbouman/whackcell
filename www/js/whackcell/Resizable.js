@@ -12,14 +12,14 @@ var Resizable;
 }).prototype = {
     init: function(){
         var config = this.config,
-            dataGrid = config.dataGrid;
+            worksheet = config.worksheet;
         if (config.columns!==false) {
-            dataGrid.setColumnWidth = this.setColumnWidth;
-            dataGrid.getColumnWidth = this.getColumnWidth;
+            worksheet.setColumnWidth = this.setColumnWidth;
+            worksheet.getColumnWidth = this.getColumnWidth;
         }
         if (config.rows!==false) {
-            dataGrid.setRowHeight = this.setRowHeight;
-            dataGrid.getRowHeight = this.getRowHeight;
+            worksheet.setRowHeight = this.setRowHeight;
+            worksheet.getRowHeight = this.getRowHeight;
         }
         if (config.ddsupport) {
             new ResizableDDSupport(
@@ -62,11 +62,11 @@ var ResizableDDSupport;
 }).prototype = {
     init: function() {
         var config = this.config,
-            dataGrid = config.dataGrid,
-            container = dataGrid.container,
-            table = dataGrid.table
+            worksheet = config.worksheet,
+            container = worksheet.container,
+            table = worksheet.table
         ;
-        dataGrid.getDDHandler().listen({
+        worksheet.getDDHandler().listen({
             scope: this,
             startDrag: function(event, ddHandler){
                 var target = event.getTarget();
@@ -145,7 +145,7 @@ var ResizableDDSupport;
                     targetParent.style.width = (newDim >= minDim ? newDim : minDim) + "px";
                     targetParent.parentNode.style.width = ((newDim >= minDim ? newDim : minDim) + 4) + "px"
                 }
-                dataGrid.getKBHandler().focus();
+                worksheet.getKBHandler().focus();
             }
         });
     }

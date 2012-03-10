@@ -55,7 +55,7 @@ return {
               }
             ],
             function: function(number) {
-                return String.fromCharCode(number)
+                return String.fromCharCode(number);
             }
         },
         CLEAN: {
@@ -80,7 +80,8 @@ return {
                 {
                     name: "text",
                     description: "is the text for which you want the code of the first character.",
-                    type: "string"
+                    type: "string",
+                    mandatory: true
                 }
             ],
             examples: {
@@ -99,7 +100,8 @@ return {
                 {
                     name: "text1, text2, ...",
                     description: "are 1 to 30 text items to be joined into a single text item. The text items can be text strings, numbers, or single-cell references.",
-                    type: "string"
+                    type: "string",
+                    multiple: true
                 }
             ],
             function: function(){

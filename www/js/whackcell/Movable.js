@@ -10,9 +10,9 @@ var Movable;
 }).prototype = {
     init: function(){
         var config = this.config,
-            dataGrid = config.dataGrid;
-        if (config.rows!==false) dataGrid.moveRow = this.moveRow;
-        if (config.columns!==false) dataGrid.moveColumn = this.moveColumn;
+            worksheet = config.worksheet;
+        if (config.rows!==false) worksheet.moveRow = this.moveRow;
+        if (config.columns!==false) worksheet.moveColumn = this.moveColumn;
         if (config.ddsupport) {
             new MovableDDSupport(
                 merge(config.ddsupport, config)
@@ -91,11 +91,11 @@ var MovableDDSupport;
 }).prototype = {
    init: function() {
         var config = this.config,
-            dataGrid = config.dataGrid,
-            container = dataGrid.container,
-            table = dataGrid.table
+            worksheet = config.worksheet,
+            container = worksheet.container,
+            table = worksheet.table
         ;
-        dataGrid.getDDHandler().listen({
+        worksheet.getDDHandler().listen({
             scope: this,
             startDrag: function(event, ddHandler){
                 var target = event.getTarget();
@@ -223,7 +223,7 @@ var MovableDDSupport;
                         if ((xy.y - targetPos.top) >= (targetParent.clientHeight/2)) {
                             targetIndex++;
                         }
-                        dataGrid.moveRow(sourceIndex, targetIndex);
+                        worksheet.moveRow(sourceIndex, targetIndex);
                         break;
                     case "wxl_column_mover":
                         if (target.tagName === "SPAN") target = target.parentNode;
@@ -237,12 +237,12 @@ var MovableDDSupport;
                         if ((xy.x - targetPos.left) >= (targetParent.clientWidth/2)) {
                             targetIndex++;
                         }
-                        dataGrid.moveColumn(sourceIndex, targetIndex);
+                        worksheet.moveColumn(sourceIndex, targetIndex);
                         break;
                 }
                 dragProxy.className = "";
                 dropProxyStyle.display = "none";
-                dataGrid.getKBHandler().focus();
+                worksheet.getKBHandler().focus();
             }
         });
     }

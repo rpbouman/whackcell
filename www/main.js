@@ -1,7 +1,7 @@
 require([
-    "js/whackcell/SpreadSheet.js",
-],  function(SpreadSheet){
-        new SpreadSheet({
+    "js/whackcell/SpreadSheetApplication.js",
+],  function(SpreadSheetApplication){
+        new SpreadSheetApplication({
             numDisplayRows: 10,
             numDisplayCols: 10,
             lastRow: 20,

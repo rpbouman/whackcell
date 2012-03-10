@@ -2,7 +2,7 @@ define(function(require) {
 
 require("js/utils.js");
 
-var DataGrid = require("js/whackcell/DataGrid.js")
+var WorkSheet = require("js/whackcell/WorkSheet.js")
 var CellValues = require("js/whackcell/CellValues.js");
 
 var FormulaSupport;
@@ -81,7 +81,7 @@ var FormulaSupport;
         ;
         for (i = 0; i < n; i++) {
             dependency = dependencies[i];
-            this.dataGrid.setCellValue(
+            this.worksheet.setCellValue(
                 dependency,
                 this.calculate(dependency),
                 this.valueHelper
@@ -251,7 +251,7 @@ var FormulaSupport;
                 }
                 catch (exception) {
                     retValue = {
-                        error: exception.message
+                        error: exception
                     };
                 }
                 return retValue;
@@ -308,6 +308,50 @@ var FormulaSupport;
         return s;
     }
 };
+
+FormulaSupport.errors = {
+    setCellError: function(cell, error) {
+        this.setCellText(cell, error.code);
+        throw error;
+    },
+    throwError: function(code, message) {
+        throw {
+            code: code,
+            message: message
+        };
+    },
+    "#DIV/0": {
+        description: "Division by zero",
+        help: "The division operation in your formula refers to a cell that contains the value 0 or is blank.",
+        class: "div0"
+    },
+    "#N/A": {
+        description: "No value available",
+        help: "Technically, this is not an error value but a special value that you can manually enter into a cell to indicate that you don't yet have a necessary value."
+    },
+    "#NAME?": {
+        description: "Excel doesn't recognize a name",
+        help: "This error value appears when you incorrectly type the range name, refer to a deleted range name, or forget to put quotation marks around a text string in a formula."
+    },
+    "#NULL!": {
+        description: "You specified an intersection of two cell ranges whose cells don't actually intersect",
+        help: "Because a space indicates an intersection, this error will occur if you insert a space instead of a comma (the union operator) between ranges used in function arguments."
+    },
+    "#NUM!": {
+        description: "Problem with a number in the formula",
+        help: "This error can be caused by an invalid argument in an Excel function or a formula that produces a number too large or too small to be represented in the worksheet."
+    },
+    "#REF!": {
+        description: "Invalid cell reference",
+        help: "This error occurs when you delete a cell referred to in the formula or if you paste cells over the ones referred to in the formula."
+    },
+    "#VALUE!": {
+        description: "Wrong type of argument in a function or wrong type of operator",
+        help: "This error is most often the result of specifying a mathematical operation with one or more cells that contain text."
+    },
+};
+
+WorkSheet.prototype.setCellError = FormulaSupport.errors.setCellError;
 
 var FormulaParser;
 (FormulaParser = function(config) {
@@ -507,7 +551,7 @@ var FormulaParser;
                     if (groups[10]){
                         token.format = "A1";
                         token.fixedCol = (groups[12] ? true : false);
-                        token.col = DataGrid.getColumnIndex(groups[11]);
+                        token.col = WorkSheet.getColumnIndex(groups[11]);
                         token.fixedRow = (groups[15] ? true : false);
                         token.row = parseInt(groups[16], 10);
                     }

@@ -9,13 +9,13 @@ var KeyboardNavigable;
 }).prototype = {
     init: function() {
         var me = this,
-            dataGrid = me.config.dataGrid;
-        dataGrid.moveToCell = this.moveToCell;
-        dataGrid.getKBHandler().listen("keydown", dataGrid.moveToCell, dataGrid);
+        worksheet = me.config.worksheet;
+        worksheet.moveToCell = this.moveToCell;
+        worksheet.getKBHandler().listen("keydown", worksheet.moveToCell, worksheet);
     },
     moveToCell: function(kbHandler, type, event){
-        var dataGrid = this,
-            cell = dataGrid.activeCell
+        var worksheet = this,
+            cell = worksheet.activeCell
         ;
         if (!cell) return;
         var cellIndex = cell.cellIndex,
@@ -42,10 +42,10 @@ var KeyboardNavigable;
                 rowIndex += event.getShiftKey() ? -1 : 1;
                 break;
             case 33:    //page up
-                rowIndex = rowIndex - (rowIndex > dataGrid.config.numDisplayRows ? dataGrid.config.numDisplayRows : rowIndex) + 1;
+                rowIndex = rowIndex - (rowIndex > worksheet.config.numDisplayRows ? worksheet.config.numDisplayRows : rowIndex) + 1;
                 break;
             case 34:    //page down
-                rowIndex = rowIndex + (dataGrid.numRows - rowIndex > dataGrid.config.numDisplayRows ? dataGrid.config.numDisplayRows : dataGrid.numRows - rowIndex) - 1;
+                rowIndex = rowIndex + (worksheet.numRows - rowIndex > worksheet.config.numDisplayRows ? worksheet.config.numDisplayRows : worksheet.numRows - rowIndex) - 1;
                 break;
             case 35:    //end
                 cellIndex = row.cells.length-1;
@@ -74,7 +74,7 @@ var KeyboardNavigable;
         if (!row) return;
         cell = row.cells.item(cellIndex);
         if (!cell) return;
-        dataGrid.setActiveCell(cell);
+        worksheet.setActiveCell(cell);
         return false;
     }
 };

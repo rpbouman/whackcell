@@ -4,9 +4,9 @@ require("js/utils.js");
 
 var CascadingStyleSheet = require("js/CascadingStyleSheet.js");
 
-var DataGrid;
+var WorkSheet;
 
-(DataGrid = function(config){
+(WorkSheet = function(config){
     var me = this;
     me.config = config = merge(config, {
         firstDisplayCol: 1,
@@ -44,7 +44,7 @@ var DataGrid;
             thead += "<th class=\"" + className + "\" scope=\"col\" style=\"width:54px\">";
             thead +=
                 "<div class=\"wxl_header wxl_column_header\" >" +
-                    (i ? "<span>" + DataGrid.getColumnHeaderName(i-1) + "</span>" +
+                    (i ? "<span>" + WorkSheet.getColumnHeaderName(i-1) + "</span>" +
                          "<div class=\"wxl_resize wxl_resize_horizontal\"></div>": ""
                     ) +
                 "</div>"
@@ -124,7 +124,7 @@ var DataGrid;
         return ddHandler;
     },
     getColumnHeader: function(col){
-        col = DataGrid.getColumnIndex(col);
+        col = WorkSheet.getColumnIndex(col);
         return this.table.rows.item(0).cells.item(col);
     },
     getRowHeader: function(row) {
@@ -132,7 +132,7 @@ var DataGrid;
     },
     createRange: function(startRow, startCol, endRow, endCol){
         return new Range({
-            dataGrid: this,
+            worksheet: this,
             start: {
                 row: startRow,
                 col: startCol
@@ -367,13 +367,13 @@ var DataGrid;
         }
     },
     setCellEditor: function(cellEditor) {
-        cellEditor.initDataGrid(this);
+        cellEditor.initWorkSheet(this);
     },
     setCellNavigator: function() {
     }
 }, Observable.prototype);
 
-DataGrid.getColumnHeaderName = function(num){
+WorkSheet.getColumnHeaderName = function(num){
     var r,h="";
     do {
         r = num % 26;
@@ -383,7 +383,7 @@ DataGrid.getColumnHeaderName = function(num){
     return h;
 };
 
-DataGrid.getColumnIndex = function(address) {
+WorkSheet.getColumnIndex = function(address) {
     if (isInt(address)) col = address;
     else
     if (/^[A-Z]+$/i.test(address)) {
@@ -396,11 +396,11 @@ DataGrid.getColumnIndex = function(address) {
     return col;
 };
 
-DataGrid.getCellName = function(td){
-    return  DataGrid.getColumnHeaderName(td.cellIndex-1) +
+WorkSheet.getCellName = function(td){
+    return  WorkSheet.getColumnHeaderName(td.cellIndex-1) +
             td.parentNode.rowIndex
     ;
 };
 
-return DataGrid;
+return WorkSheet;
 });

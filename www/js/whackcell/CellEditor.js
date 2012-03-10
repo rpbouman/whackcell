@@ -1,22 +1,22 @@
 define(function(require) {
 
 require("js/utils.js");
-var DataGrid = require("js/whackcell/DataGrid.js");
+var WorkSheet = require("js/whackcell/WorkSheet.js");
 
 var CellEditor;
 (CellEditor = function(config) {
     this.config = config = merge(config, {
     });
-    this.dataGrid = null;
+    this.worksheet = null;
     this.cell = null;
     this.render();
 }).prototype = {
-    initDataGrid: function(dataGrid){
-        dataGrid.cellEditor = this;
-        dataGrid.listen("cellactivated", this.cellActivated, this);
-        dataGrid.listen("click", this.cellClicked, this);
-        var kbHandler = dataGrid.getKBHandler();
-        kbHandler.listen("keydown", this.dataGridKeyDownHandler, this);
+    initWorkSheet: function(worksheet){
+        worksheet.cellEditor = this;
+        worksheet.listen("cellactivated", this.cellActivated, this);
+        worksheet.listen("click", this.cellClicked, this);
+        var kbHandler = worksheet.getKBHandler();
+        kbHandler.listen("keydown", this.worksheetKeyDownHandler, this);
     },
     render: function() {
         var me = this,
@@ -36,7 +36,7 @@ var CellEditor;
     setEnabled: function(enabled) {
         this.textarea.disabled = !enabled;
     },
-    cellClicked: function(dataGrid, event, cell){
+    cellClicked: function(worksheet, event, cell){
         if (!this.editing) return;
         var textarea = this.textarea,
             value = textarea.value
@@ -47,7 +47,7 @@ var CellEditor;
         var pos = textarea.selectionStart,
             s = value.substr(0, pos),
             e = value.substr(textarea.selectionEnd),
-            cellName = DataGrid.getCellName(cell)
+            cellName = WorkSheet.getCellName(cell)
         ;
         textarea.value = s + cellName + e;
         textarea.selectionStart = textarea.selectionEnd = pos + cellName.length;
@@ -55,23 +55,23 @@ var CellEditor;
         this.focus();
         return false;
     },
-    cellActivated: function(dataGrid, event, cell){
+    cellActivated: function(worksheet, event, cell){
         var textarea = this.textarea;
         if (this.isEditing() && cell !== this.cell) {
             this.stopEditing();
         }
-        this.dataGrid = dataGrid;
+        this.worksheet = worksheet;
         this.cell = cell;
-        textarea.value = dataGrid.getCellContent(cell);
+        textarea.value = worksheet.getCellContent(cell);
     },
     isEditing: function() {
         return this.editing;
     },
-    startEditing: function(dataGrid, event, cell) {
+    startEditing: function(worksheet, event, cell) {
         var me = this;
-        me.dataGrid = dataGrid;
+        me.worksheet = worksheet;
         me.cell = cell;
-        this.oldValue = dataGrid.getCellContent(cell);
+        this.oldValue = worksheet.getCellContent(cell);
         me.editing = true;
         me.syncCell();
         addClass(this.textarea, "wxl_active");
@@ -81,20 +81,20 @@ var CellEditor;
     },
     stopEditing: function() {
         if (!this.editing) return;
-        var dataGrid = this.dataGrid,
+        var worksheet = this.worksheet,
             cell = this.cell,
             textarea = this.textarea
         ;
         if (!cell) return true;
         try {
-            dataGrid.setCellContent(cell, textarea.value);
+            worksheet.setCellContent(cell, textarea.value);
             removeClass(textarea, "wxl_active");
             this.editing = false;
             removeClass(cell, "wxl_editing");
             textarea.blur();
-            dataGrid.focus();
+            worksheet.focus();
             this.cell = null;
-            this.dataGrid = null;
+            this.worksheet = null;
             stopEditing = true;
         } catch (exception) {
             exception = JSON.stringify(exception)
@@ -109,7 +109,7 @@ var CellEditor;
         }
         return stopEditing;
     },
-    dataGridKeyDownHandler: function(kbHandler, type, event){
+    worksheetKeyDownHandler: function(kbHandler, type, event){
         var keyCode = event.getKeyCode();
         switch (keyCode) {
             case 9:     //tab
@@ -141,16 +141,16 @@ var CellEditor;
             case 123:   //F12
                 return;
         }
-        var dataGrid = this.dataGrid,
+        var worksheet = this.worksheet,
             cell = this.cell
         ;
         if (cell) {
             if (keyCode === 46) {   //del
-                dataGrid.clearCell(cell);
+                worksheet.clearCell(cell);
                 this.textarea.value = "";
             }
             else {
-                this.startEditing(dataGrid, event, cell);
+                this.startEditing(worksheet, event, cell);
             }
             return false;
         }
@@ -162,11 +162,11 @@ var CellEditor;
                 this.textarea.value = this.oldValue;
             case 9:     //tab
             case 13:    //newline
-                var dataGrid = this.dataGrid;
+                var worksheet = this.worksheet;
                 if (this.isEditing()) {
                     e.preventDefault();
                     if (this.stopEditing()) {
-                        var kbHandler = dataGrid.getKBHandler();
+                        var kbHandler = worksheet.getKBHandler();
                         kbHandler.focus();
                         kbHandler.fireEvent("keydown", e);
                     }
@@ -205,18 +205,18 @@ var CellEditor;
         return false;
     },
     syncCell: function() {
-        var dataGrid = this.dataGrid,
-            activeCell = dataGrid.getActiveCell()
+        var worksheet = this.worksheet,
+            activeCell = worksheet.getActiveCell()
         ;
-        dataGrid.setCellText(activeCell, this.textarea.value);
+        worksheet.setCellText(activeCell, this.textarea.value);
     },
     focus: function(){
         this.textarea.focus();
     },
     focusHandler: function(e) {
-        var dataGrid = this.dataGrid, cell;
-        if (dataGrid &&  (cell = dataGrid.getActiveCell())) {
-            this.startEditing(dataGrid, "focus", cell);
+        var worksheet = this.worksheet, cell;
+        if (worksheet &&  (cell = worksheet.getActiveCell())) {
+            this.startEditing(worksheet, "focus", cell);
         }
     },
     clickHandler: function(e) {

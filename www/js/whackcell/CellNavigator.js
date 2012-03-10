@@ -2,7 +2,7 @@ define(function(require){
 
 require("js/utils.js");
 
-var DataGrid = require("js/whackcell/DataGrid.js")
+var WorkSheet = require("js/whackcell/WorkSheet.js")
 
 var CellNavigator;
 (CellNavigator = function(config) {
@@ -11,8 +11,8 @@ var CellNavigator;
     this.init();
 }).prototype = {
     init: function(){
-        var dataGrid = this.config.dataGrid;
-        dataGrid.listen("cellactivated", this.cellActivated, this);
+        var worksheet = this.config.worksheet;
+        worksheet.listen("cellactivated", this.cellActivated, this);
         this.render();
     },
     render: function() {
@@ -28,8 +28,8 @@ var CellNavigator;
         listen(input, "focus", this.focusHandler, this);
         this.input = input;
     },
-    cellActivated: function(dataGrid, event, cell){
-        this.input.value = DataGrid.getCellName(cell);
+    cellActivated: function(worksheet, event, cell){
+        this.input.value = WorkSheet.getCellName(cell);
     },
     changeHandler: function() {
     },

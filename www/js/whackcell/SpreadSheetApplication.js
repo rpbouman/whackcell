@@ -1,7 +1,7 @@
 define(function(require){
 
 require("js/utils.js");
-var DataGrid = require("js/whackcell/DataGrid.js");
+var WorkSheet = require("js/whackcell/WorkSheet.js");
 var Range = require("js/whackcell/Range.js");
 var Movable = require("js/whackcell/Movable.js");
 var Resizable = require("js/whackcell/Resizable.js");
@@ -15,9 +15,9 @@ var standardTextFunctions = require("js/whackcell/StandardTextFunctions.js");
 var standardDateTimeFunctions = require("js/whackcell/StandardDateTimeFunctions.js");
 var standardMathFunctions = require("js/whackcell/StandardMathFunctions.js");
 
-var SpreadSheet;
+var SpreadSheetApplication;
 
-(SpreadSheet = function(config) {
+(SpreadSheetApplication = function(config) {
     this.config = merge(config, {
         id: body,
         numDisplayRows: 50,
@@ -32,7 +32,7 @@ var SpreadSheet;
             container = el(config.id),
             cellNavigator = "wxl_navigator",
             cellEditor = "wxl_editor",
-            dataGrid = "wxl_datagrid"
+            worksheet = "wxl_datagrid"
         ;
         chs(container, [
             crEl(
@@ -50,35 +50,35 @@ var SpreadSheet;
                 }),
             ])),
             crEl("DIV", {
-                id: dataGrid,
+                id: worksheet,
                 style: {
                     top: "60px",
                     left: "0px"
                 }
             })
         ]);
-        dataGrid = new DataGrid(merge({
-            div: dataGrid
+        worksheet = new WorkSheet(merge({
+            div: worksheet
         }, this.config));
 
         //allow grid to be navigated using the keyboard
         new KeyboardNavigable({
-            dataGrid: dataGrid
+            worksheet: worksheet
         });
         //allow columns and rows to be moved around
         new Movable({
-            dataGrid: dataGrid,
+            worksheet: worksheet,
             ddsupport: true
         });
         //allow columns and rows to be moved around
         new Resizable({
-            dataGrid: dataGrid,
+            worksheet: worksheet,
             ddsupport: true
         });
 
         //add a value helper
         new CellValues({
-            dataGrid: dataGrid,
+            worksheet: worksheet,
             formulaSupport: new FormulaSupport({
                 moduleManager: new FunctionModuleManager({
                     modules: [
@@ -91,19 +91,19 @@ var SpreadSheet;
         });
 
         //add a celleditor
-        dataGrid.setCellEditor(
+        worksheet.setCellEditor(
             new CellEditor({
                 textarea: cellEditor
             })
         );
         //add a widget to show the cell address
         new CellNavigator({
-            dataGrid: dataGrid,
+            worksheet: worksheet,
             input: cellNavigator
         });
     }
 };
 
-return SpreadSheet;
+return SpreadSheetApplication;
 
 });
