@@ -20,6 +20,7 @@ var CellValues;
             formulaHelper = formulaSupport.createCellValueHelper();
             patterns[formulaHelper.name] = formulaHelper;
             formulaSupport.worksheet = worksheet;
+            formulaSupport.init();
         }
         worksheet.valueHelper = this;
         worksheet.setCellContent = this.setCellContent;
@@ -53,9 +54,9 @@ var CellValues;
                 ""
             ))
         ;
-        if (obj.error) this.setCellError(cell, obj.error);
         sAtt(cell, "data-content", content);
-        this.setCellValue(cell, value, type);
+        if (obj.error) this.setCellError(cell, obj.error);
+        else this.setCellValue(cell, value, type);
         if (formulaSupport) formulaSupport.updateDependencies(cell);
     },
     setCellValue: function(cell, value, type) {

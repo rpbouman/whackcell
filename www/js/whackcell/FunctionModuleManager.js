@@ -13,6 +13,12 @@ var FunctionModuleManager;
     this.config = config;
     if (config.modules) this.registerModules(config.modules);
 }).prototype = {
+    getFunction: function(name) {
+        return this.functions[name];
+    },
+    isModuleFunctionRegistered: function(name) {
+        return this.getFunction(name);
+    },
     registerModuleFunction: function(moduleFunction) {
         var functionName = moduleFunction.name.toUpperCase(),
             func = moduleFunction.function,

@@ -45,7 +45,9 @@ return {
                 {
                     name: "number",
                     description: "is a number between 1 and 255 specifying which character you want. The character is from the character set used by your computer.",
-                    type: "number"
+                    type: "number",
+                    min: 1,
+                    max: 255
                 }
             ],
             examples: [

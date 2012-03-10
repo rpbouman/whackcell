@@ -25,6 +25,12 @@ var FormulaSupport;
 }).prototype = {
     init: function() {
     },
+    getModuleManager: function() {
+        return this.config.moduleManager;
+    },
+    /**
+     *  Find a td specified by the celldef.
+     **/
     resolveCell: function(rows, cellDef){
         var cell;
         switch (cellDef.format) {
@@ -46,10 +52,39 @@ var FormulaSupport;
     getCellRows: function(cell) {
         return cell.parentNode.parentNode.parentNode.rows;
     },
+    /**
+     *  Get the list of cells who'se values directly depend on the specified td.
+     **/
     getDependencies: function(cell){
         var dependencies = gAtt(cell, "data-dependent-cells");
         return dependencies ? JSON.parse(dependencies) : [];
     },
+    /**
+     *  Get the list of all cells who'se values directly or indirectly depend on the specified td.
+     **/
+    getAllDependencies: function(cell){
+        var rows = this.getCellRows(cell),
+            cells = [], i = 0, a = {},
+            r, c, rA, dependencies, j, n, dependency;
+        do {
+            dependencies = this.getDependencies(cell);
+            n = dependencies.length;
+            for (j = 0; j < n; j++) {
+                dependency = dependencies[j];
+                r = dependency.r;
+                if (!(rA = a[r])) rA = a[r] = {};
+                c = dependency.c;
+                if (!(rA[c])) {
+                    rA[c] = true;
+                    cells.push(rows.item(r).cells.item(c));
+                }
+            }
+        } while (cell = cells[i++]);
+        return a;
+    },
+    /**
+     *  Get all cells that depend on the specified cell and sort them according to evaluation order
+     **/
     sortDependencies: function(cell) {
         var me = this,
             allDependencies = me.getAllDependencies(cell),
@@ -75,39 +110,33 @@ var FormulaSupport;
         });
         return dependencies;
     },
+    /**
+     *  Update the cells that are dependent on the specified cell.
+     **/
     updateDependencies: function(cell){
         var dependencies = this.sortDependencies(cell),
-            i, n = dependencies.length, dependency
+            i, n = dependencies.length, dependency, value
         ;
         for (i = 0; i < n; i++) {
             dependency = dependencies[i];
-            this.worksheet.setCellValue(
-                dependency,
-                this.calculate(dependency),
-                this.valueHelper
-            );
+            try {
+                value = this.calculate(dependency);
+                this.worksheet.setCellValue(
+                    dependency,
+                    value,
+                    this.valueHelper
+                );
+            } catch (exception) {
+                this.worksheet.setCellError(
+                  dependency,
+                  exception
+                );
+            }
         }
     },
-    getAllDependencies: function(cell){
-        var rows = this.getCellRows(cell),
-            cells = [], i = 0, a = {},
-            r, c, rA, dependencies, j, n, dependency;
-        do {
-            dependencies = this.getDependencies(cell);
-            n = dependencies.length;
-            for (j = 0; j < n; j++) {
-                dependency = dependencies[j];
-                r = dependency.r;
-                if (!(rA = a[r])) rA = a[r] = {};
-                c = dependency.c;
-                if (!(rA[c])) {
-                    rA[c] = true;
-                    cells.push(rows.item(r).cells.item(c));
-                }
-            }
-        } while (cell = cells[i++]);
-        return a;
-    },
+    /**
+     *  Register that the specified cell depends on a cell.
+     **/
     registerCellDependency: function(cell, dependsOn){
         var circRef = {
             message: "Circular reference"
@@ -132,6 +161,9 @@ var FormulaSupport;
         dependencies.push({r:r, c:c});
         sAtt(dependsOn, "data-dependent-cells", JSON.stringify(dependencies));
     },
+    /**
+     *  Evaluate a single cell.
+     **/
     calculate: function(cell) {
         var formula = gAtt(cell, "data-formula");
         if (!formula) throw "Not a formula";
@@ -312,7 +344,8 @@ var FormulaSupport;
 FormulaSupport.errors = {
     setCellError: function(cell, error) {
         this.setCellText(cell, error.code);
-        throw error;
+        cell.value = error;
+        if (error.type && error.type !== "value error") throw error;
     },
     throwError: function(code, message) {
         throw {
@@ -605,6 +638,7 @@ var FormulaParser;
     },
     throwException: function(message, oprtr, oprnd){
         throw {
+            type: "parse error",
             text: this.text,
             message: message,
             "operator": {
