@@ -415,39 +415,27 @@ function numGroups(regexp) {
 ***************************************************************/
 var Event;
 (Event = function(e) {
-    if (!e) {
-        e = win.event;
-    }
+    if (!e) e = win.event;
     this.browserEvent = e;
     return this;
 }).prototype = {
     getTarget: function(){
         var browserEvent = this.browserEvent;
-        if (browserEvent.target) {
-            target = browserEvent.target;
-        }
+        if (browserEvent.target) target = browserEvent.target;
         else
-        if (browserEvent.srcElement) {
-            target = browserEvent.srcElement
-        }
-        else {
-            target = null;
-        }
+        if (browserEvent.srcElement) target = browserEvent.srcElement
+        else
+        target = null;
         return target;
     },
     getButton: function(){
-        if (doc.addEventListener) {
-            return this.browserEvent.button;
-        }
+        if (doc.addEventListener) return this.browserEvent.button;
         else
         if (doc.attachEvent) {
             switch (this.browserEvent.button) {
-                case 1:
-                    return 0;
-                case 2:
-                    return 2;
-                case 4:
-                    return 1;
+                case 1: return 0;
+                case 2: return 2;
+                case 4: return 1;
             }
         }
         return null;
@@ -505,17 +493,13 @@ for (property in Event.prototype) {
 var GlobalEvent = new Event(null);
 
 Event.get = function(e) {
-    if (!e) {
-        e = win.event;
-    }
+    if (!e) e = win.event;
     GlobalEvent.browserEvent = e;
     return GlobalEvent;
 };
 
 function listen(node, type, listener, scope) {
-    if (!scope) {
-        scope = win;
-    }
+    if (!scope) scope = null;
     if (node.addEventListener) {
         node.addEventListener(type, function(e){
             listener.call(scope, Event.get(e));
@@ -539,12 +523,8 @@ var Observable;
 }).prototype = {
     listen: function(type, method, scope, context) {
         var listeners, handlers, scope;
-        if (!(listeners = this.listeners)) {
-            listeners = this.listeners = {};
-        }
-        if (!(handlers = listeners[type])){
-            handlers = listeners[type] = [];
-        }
+        if (!(listeners = this.listeners)) listeners = this.listeners = {};
+        if (!(handlers = listeners[type])) handlers = listeners[type] = [];
         scope = (scope ? scope : win);
         handlers.push({
             method: method,
@@ -554,20 +534,12 @@ var Observable;
     },
     fireEvent: function(type, data, context) {
         var listeners, handlers, i, n, handler, scope;
-        if (!(listeners = this.listeners)) {
-            return;
-        }
-        if (!(handlers = listeners[type])){
-            return;
-        }
+        if (!(listeners = this.listeners)) return;
+        if (!(handlers = listeners[type])) return;
         for (i = 0, n = handlers.length; i < n; i++){
             handler = handlers[i];
             if (!isUnd(context) && context !== handler.context) continue;
-            if (handler.method.call(
-                handler.scope, this, type, data
-            )===false) {
-                return false;
-            }
+            if (handler.method.call(handler.scope, this, type, data) === false) return false;
         }
         return true;
     }
