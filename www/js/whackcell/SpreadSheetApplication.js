@@ -101,6 +101,27 @@ var SpreadSheetApplication;
             worksheet: worksheet,
             input: cellNavigator
         });
+
+        var data = {
+            1: {
+                1: "bla",
+                4: {
+                    text: "boe",
+                    atts: {
+                        style: {
+                            "background-color": "green"
+                        }
+                    }
+                }
+            },
+            2: {
+                3: "=A1 & A4"
+            }
+        };
+        worksheet.setData(data);
+        var d = worksheet.getData();
+        console.log(JSON.stringify(data));
+        console.log(JSON.stringify(d));
     }
 };
 

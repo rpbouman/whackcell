@@ -90,6 +90,7 @@ var WorkSheet;
         me.table = tag("table", container);
         me.initStyleSheet(styles);
         listen(me.table, "click", this.clickHandler, me);
+        if (config.data) this.setData(config.data);
         return;
     },
     initStyleSheet: function(styles) {
@@ -284,6 +285,7 @@ var WorkSheet;
         return this.getCellText();
     },
     setCellContent: function(cell, text) {
+        sAtt(cell, "data-content", text);
         this.setCellText(cell, text);
     },
     getCellText: function(cell) {
@@ -370,6 +372,66 @@ var WorkSheet;
         cellEditor.initWorkSheet(this);
     },
     setCellNavigator: function() {
+    },
+    setData: function(d) {
+        var rows = this.getRows(),
+            r, c,
+            row, cell,
+            tr, td,
+            txt
+        ;
+        for (r in d) {
+            row = d[r];
+            tr = rows.item(r);
+            for (c in row) {
+                cell = row[c];
+                td = tr.cells.item(c);
+                if (isStr(cell)) txt = cell;
+                else
+                if (isObj(cell)){
+                    if (cell.atts) sAtts(td, cell.atts);
+                    txt = isUnd(cell.text) ? "" : cell.text
+                }
+                this.setCellContent(td, txt);
+            }
+        }
+    },
+    getData: function() {
+        var rows = this.getRows(),
+            r, n = rows.length,
+            tr, row, cells, td, cell,
+            txt,
+            c, m,
+            att, atts, attributes,
+            k, o,
+            data = {}
+        ;
+        for (r = 1; r < n; r++) {
+            tr = rows.item(r);
+            cells = tr.cells;
+            m = cells.length;
+            for (c = 1; c < m; c++) {
+                td = cells.item(c);
+                txt = gAtt(td, "data-content");
+                if (txt) {
+                    row = data[r];
+                    if (!row) row = data[r] = {};
+                    cell = row[c] = {
+                        text: txt,
+                        atts: {}
+                    };
+                    atts = cell.atts;
+                    attributes = td.attributes;
+                    o = attributes.length;
+                    for (k = 0; k < o; k++) {
+                        att = attributes[k];
+                        if (!att.name.indexOf("data-")) continue;
+                        atts[att.name] = att.value;
+                    }
+                }
+            }
+        }
+        return data;
     }
 }, Observable.prototype);
 
