@@ -35,14 +35,8 @@ var FormulaSupport;
         var cell;
         switch (cellDef.format) {
             case "A1":
-                cell = rows.item(cellDef.row).cells.item(cellDef.col);
-                break;
             case "R1C1":
-                cell = rows.item(
-                    row.rowIndex + (cellDef.rowInc ? cellDef.rowInc : 0)
-                ).cells.item(
-                    cell.cellIndex + (cellDef.colInc ? cellDef.colInc : 0)
-                );
+                cell = rows.item(cellDef.row).cells.item(cellDef.col);
                 break;
             default:
                 throw "Invalid parameter";
@@ -497,7 +491,8 @@ var FormulaParser;
             type: "operand"
         },
         cell: {
-            patt: /(([Rr]((\[([+-]?\d+)\]|\d*)))([Cc](\[([+-]?\d+)\]|(\d*))))|(((\$)?([A-Za-z]{1,2}))((\$)?(\d+)))/,
+            patt: /(([Rr]((\[([+-]?\d+)\]|\d+)?))([Cc]((\[([+-]?\d+)\]|\d+)?)))|(((\$)?([A-Za-z]{1,2}))((\$)?(\d+)))/,
+            //     12    34  5        5      4 326    78  9        9      8 761
             type: "operand"
         },
         name: {
@@ -551,7 +546,7 @@ var FormulaParser;
             };
         }
     },
-    tokenize: function(text) {
+    tokenize: function(text, cell) {
         var tokenClasses = this.tokenClasses,
             lparen = tokenClasses["("],
             rparen = tokenClasses[")"],
@@ -561,7 +556,10 @@ var FormulaParser;
             prevToken = (firstToken = {
                 type: lparen.type,
                 c: lparen.name
-            });
+            }),
+            cellIndex = cell.cellIndex,
+            rowIndex = cell.parentNode.rowIndex
+        ;
         this.setText(text);
         do {
             token = this.nextToken();
@@ -577,14 +575,19 @@ var FormulaParser;
                 case "cell":
                     if (groups[1]) {
                         token.format = "R1C1";
-                        if (groups[5]) token.colInc = parseInt(groups[5], 10);
-                        if (groups[8]) token.rowInc = parseInt(groups[8], 10);
+                        if (groups[5]) token.row = rowIndex + (token.rowInc = parseInt(groups[5], 10));
+                        else
+                        if (groups[4]) token.row = parseInt(groups[4], 10);
+
+                        if (groups[9]) token.col = cellIndex + (token.colInc = parseInt(groups[9], 10));
+                        else
+                        if (groups[8]) token.col = parseInt(groups[8], 10);
                     }
                     else
                     if (groups[10]){
                         token.format = "A1";
                         token.fixedCol = (groups[12] ? true : false);
-                        token.col = WorkSheet.getColumnIndex(groups[11]);
+                        token.col = WorkSheet.getColumnIndex(groups[13]);
                         token.fixedRow = (groups[15] ? true : false);
                         token.row = parseInt(groups[16], 10);
                     }
@@ -608,10 +611,10 @@ var FormulaParser;
             lastToken: token
         };
     },
-    parse: function(text) {
+    parse: function(text, cell) {
         var tokenClasses = this.tokenClasses,
             tokens, firstToken, lastToken, token, prevToken;
-        tokens = this.tokenize(text);
+        tokens = this.tokenize(text, cell);
         token = prevToken = firstToken = tokens.firstToken;
         lastToken = tokens.lastToken;
         outer: while (token = token.nextToken) {
@@ -631,9 +634,7 @@ var FormulaParser;
             };
             prevToken = token;
         };
-        if (firstToken.r !== lastToken) {
-            this.throwException("Parse exception", null, null);
-        }
+        if (firstToken.r !== lastToken) this.throwException("Parse exception", null, null);
         return firstToken.a;
     },
     throwException: function(message, oprtr, oprnd){
@@ -675,35 +676,27 @@ var FormulaParser;
                 }
                 else right = arg;   //no arguments, reset so we can find the right parenthesis.
             }
-            else
-            if ((!arg) || (arg.type !== "operand")) {       //not a function. In this case, parenthesis cannot be empty
-                this.throwException("Missing operand", prevToken, operand);
-            }
-            else {                                          //parenthesis not empty, store contents.
+            else    //not a function. In this case, parenthesis cannot be empty
+            if ((!arg) || (arg.type !== "operand")) this.throwException("Missing operand", prevToken, operand);
+            else {  //parenthesis not empty, store contents.
                 prevToken.a = arg;
                 right = arg.nextToken;
                 del(arg, "nextToken", "prevToken", "type");
             }
 
-            if ((!right) || (right.type !== "right")) {
-                this.throwException("Missing right parenthesis", prevToken, right);
-            }
+            if ((!right) || (right.type !== "right")) this.throwException("Missing right parenthesis", prevToken, right);
             token = right.nextToken;
         }
         else {
             if (type !== "pre") {
-                if (!(left = prevToken.prevToken) || (left.type !== "operand")) {
-                    this.throwException("Missing left operand", prevToken, left);
-                }
+                if (!(left = prevToken.prevToken) || (left.type !== "operand")) this.throwException("Missing left operand", prevToken, left);
                 prevToken.l = left;
                 prevToken.prevToken = left.prevToken;
                 if (left.prevToken) left.prevToken.nextToken = prevToken;
 
                 del(left, "nextToken", "prevToken", "type", "f", "t");
             }
-            if (type !== "post" && (!(right = prevToken.nextToken) || (right.type !== "operand"))) {
-                this.throwException("Missing right operand", prevToken, right);
-            }
+            if (type !== "post" && (!(right = prevToken.nextToken) || (right.type !== "operand"))) this.throwException("Missing right operand", prevToken, right);
         }
 
         if (type !== "post") {
