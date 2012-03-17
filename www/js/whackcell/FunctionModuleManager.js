@@ -92,8 +92,10 @@ var FunctionModuleManager;
         multipleArgs = arg ? (arg.multiple === true) : false;
         //handle flexible number of arguments. Only the last argument declaration may be a multiple
         if (multipleArgs) {
-            exp = exp.replace(/a = arguments\[\d+\]/g, "a = arguments[i]");
-            assertionFunctionText += "\nfor (var i = " + i + "; i < n; i++) {" + exp + "\n}";
+            if (exp) {
+              exp.replace(/a = arguments\[\d+\]/g, "a = arguments[i]");
+              assertionFunctionText += "\nfor (var i = " + i + "; i < n; i++) {" + exp + "\n}";
+            }
         }
         else assertionFunctionText = "\nif (n > " + n + ") " +
                                       getThrow("#VALUE!", "Too many arguments: expected at most " + n + " arguments.") +
