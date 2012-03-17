@@ -67,11 +67,10 @@ return {
                 {
                     name: "text",
                     description: "is any worksheet information from which you want to remove nonprintable characters.",
-                    type: "string"
                 }
             ],
             function: function(text) {
-                if (typeof(text)!=="string") text = String(text);
+                if (typeof(text) !== "string") text = String(text);
                 return text.replace(/[\x00-\x20]/g, "");
             }
         },
@@ -91,7 +90,6 @@ return {
               description: "Displays the numeric code for A (65)"
             },
             function: function(text) {
-                if (typeof(text)!=="string") text = String(text);
                 return text.charCodeAt(0);
             }
         },
@@ -102,7 +100,6 @@ return {
                 {
                     name: "text1, text2, ...",
                     description: "are 1 to 30 text items to be joined into a single text item. The text items can be text strings, numbers, or single-cell references.",
-                    type: "string",
                     multiple: true
                 }
             ],
