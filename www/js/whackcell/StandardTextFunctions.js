@@ -184,40 +184,21 @@ return {
                 {
                     name: "start_num",
                     description: "specifies the character at which to start the search. The first character in within_text is character number 1. If you omit start_num, it is assumed to be 1.",
-                    type: "number"
+                    type: "number",
+                    mandatory: false,
+                    min: 1,
+                    default: 1
                 }
             ],
             function: function(find, within, start){
                 var r;
-                switch (typeof(start)) {
-                    case "undefined":
-                        start = 1;
-                    case "number":
-                        if (start < 1) r = {
-                            error: "start_num is not greater than zero"
-                        }
-                        else
-                        if (start > within.length) r =  {
-                            error: "start_num is greater than length of within"
-                        }
-                        else {
-                            start -= 1;
-                        }
-                        break;
-                    default:
-                        r = {
-                            error: "start_num must be a number"
-                        };
-                }
-                if (typeof(within)!=="string") within = String(text);
-                if (!r) {
-                    r = within.indexOf(find, start);
-                    if (r === -1) r = {
-                      error: "find_text does not appear in within_text"
-                    }
-                    else r += 1;
-                }
-                return r;
+                if (start > within.length) return  {
+                    error: "start_num is greater than length of within"
+                };
+                if ((r = within.indexOf(find, --start)) === -1) return {
+                  error: "find_text does not appear in within_text"
+                };
+                return ++r;
             }
         },
         FIXED: {
