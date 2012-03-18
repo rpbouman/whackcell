@@ -128,6 +128,17 @@ CellValues.patterns = {
             return value;
         }
     },
+    number: {
+        regexp: /[+-]?((((\d+)|(\d{1,3}(,\d{3})+))(\.\d+)?)|(\.\d+))([eE][+-]?\d+)?/,
+        parser: function(arr){
+            return {
+                value: Number(arr[0].replace(",", ""))
+            };
+        },
+        toText: function(value) {
+            return String(value);
+        }
+    },
     date: {
         //see https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date/parse
         //see http://www.w3.org/TR/NOTE-datetime and http://tools.ietf.org/html/rfc822#section-5
@@ -140,17 +151,6 @@ CellValues.patterns = {
         },
         toText: function(value) {
             return value.toString();
-        }
-    },
-    number: {
-        regexp: /[+-]?((((\d+)|(\d{1,3}(,\d{3})+))(\.\d*)?)|(\.\d+))([eE][+-]?\d+)?/,
-        parser: function(arr){
-            return {
-                value: Number(arr[0].replace(",", ""))
-            };
-        },
-        toText: function(value) {
-            return String(value);
         }
     },
     boolean: {
