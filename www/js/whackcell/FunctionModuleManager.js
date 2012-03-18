@@ -77,14 +77,14 @@ var FunctionModuleManager;
                 message = "Argument \"" + argName + "\" at position " + (i+1) + " must ";
                 exp = "\na = arguments["+i+"];";
                 if (type) exp += "\nif (typeof(a) !== \"" + type + "\")" + getThrow("#VALUE!", message + "have the " + type + " datatype.");
-                code = (type === "number" ? "#NUM!" : "#VALUE!")
+                code = (type === "number" ? "#NUM!" : "#VALUE!");
                 if (hasMin) exp += "\nif (a < " + min + ")" + getThrow(code, message + "not be less than " + min + ".");
                 if (hasMax) exp += "\nif (a > " + max + ")" + getThrow(code, message + "not be greater than " + max + ".");
                 if (!argMandatory) {
-                    exp += "\nif (n > "+i+"){" +
+                    exp = "\nif (n > "+i+"){" +
                     "\n"+ exp +
                     "\n}";
-                    if (def = arg.default) exp += "\nelse arguments["+i+"] = " + lit(def);
+                    if (!isUnd(def = arg.default)) exp += "\nelse arguments["+i+"] = " + lit(def);
                 }
                 assertionFunctionText += exp;
             }
