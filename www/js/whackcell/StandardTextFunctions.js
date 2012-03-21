@@ -192,10 +192,10 @@ return {
             ],
             function: function(find, within, start){
                 var r;
-                if (start > within.length) return  {
+                if (start > within.length) throw  {
                     error: "start_num is greater than length of within"
                 };
-                if ((r = within.indexOf(find, --start)) === -1) return {
+                if ((r = within.indexOf(find, --start)) === -1) throw {
                   error: "find_text does not appear in within_text"
                 };
                 return ++r;
@@ -213,12 +213,15 @@ return {
                 {
                     name: "decimals",
                     description: "is the number of digits to the right of the decimal point.",
-                    type: "number"
+                    type: "number",
+                    mandatory: false,
+                    default: 2
                 },
                 {
                     name: "no_commas",
                     description: " is a logical value that, if TRUE, prevents FIXED from including commas in the returned text.",
-                    type: "boolean"
+                    type: "boolean",
+                    default: false
                 }
             ],
             remarks: [
@@ -229,7 +232,6 @@ return {
                 "The major difference between formatting a cell containing a number with the Cells command (Format menu) and formatting a number directly with the FIXED function is that FIXED converts its result to text. A number formatted with the Cells command is still a number."
             ],
             function: function(number, decimals, no_commas) {
-                if (typeof(decimals)==="undefined") decimals = 2;
                 if (decimals < 0) decimals = 0;
                 number = (number).toFixed(decimals);
                 if (no_commas !== true) {
@@ -265,20 +267,18 @@ return {
             arguments: [
                 {
                     name: "text",
-                    description: "is the text string that contains the characters you want to extract.",
-                    type: "string"
+                    description: "is the text string that contains the characters you want to extract."
                 },
                 {
                     name: "num_chars",
                     description: "specifies the number of characters you want LEFT to extract.",
-                    type: "number"
+                    type: "number",
+                    mandatory: false,
+                    min: 1,
+                    default: 1
                 }
             ],
             function: function(text, num_chars) {
-                if (typeof(num_chars)==="undefined") num_chars = 1;
-                if (!(num_chars >= 0)) return {
-                    error: "num_chars must be greater than or equal to zero."
-                }
                 if (typeof(text)!=="string") text = String(text);
                 return text.substr(0, num_chars);
             }
