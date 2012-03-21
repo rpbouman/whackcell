@@ -382,10 +382,10 @@ var WorkSheet;
         ;
         for (r in d) {
             row = d[r];
-            tr = rows.item(r);
+            tr = rows.item(parseInt(r, 10));
             for (c in row) {
                 cell = row[c];
-                td = tr.cells.item(c);
+                td = tr.cells.item(parseInt(c, 10));
                 if (isStr(cell)) txt = cell;
                 else
                 if (isObj(cell)){
