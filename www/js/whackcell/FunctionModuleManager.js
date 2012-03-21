@@ -34,8 +34,8 @@ var FunctionModuleManager;
             };
         };
         this.runtime[functionName] = assertion ? function() {
-            assertion.apply(this, arguments);
-            return func.apply(this, arguments);
+            var args = assertion.apply(this, arguments);
+            return func.apply(this, args);
         } : func;
     },
     createModuleFunctionAssertion: function(moduleFunction) {
@@ -107,6 +107,7 @@ var FunctionModuleManager;
         if (assertionFunctionText.length) assertionFunctionText = "var n = arguments.length" +
                                                                   (arg ? ", a" : "") + ";" +
                                                                   assertionFunctionText;
+        assertionFunctionText = (assertionFunctionText.length ? assertionFunctionText : "") + "\nreturn arguments;"
         return assertionFunctionText.length ? new Function(assertionFunctionText) : null;
     },
     registerModule: function(module) {
