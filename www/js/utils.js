@@ -61,7 +61,7 @@ function isFunc(v){
 }
 
 function isArr(v){
-    return isObj(e) && v.constructor===Array;
+    return isObj(v) && v.constructor===Array;
 }
 
 function isNum(v){
