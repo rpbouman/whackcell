@@ -87,10 +87,10 @@ var FormulaSupport;
             row
         ;
         for (r in allDependencies) {
-            row = rows.item(parseInt(r, 10));
+            row = rows.item(toInt(r));
             rD = allDependencies[r];
             for (c in rD) {
-                dependencies.push(row.cells.item(parseInt(c, 10)));
+                dependencies.push(row.cells.item(toInt(c)));
             }
         }
         dependencies.sort(function(a, b){
@@ -533,7 +533,7 @@ var FormulaParser;
         ;
         if (items === null) throw "Match Error";
         for (i in tokenTypes) {
-            i = parseInt(i, 10);
+            i = toInt(i);
             item = items[i];
             if (!item) continue;
             tokenType = tokenTypes[i];
@@ -575,13 +575,13 @@ var FormulaParser;
                 case "cell":
                     if (groups[1]) {
                         token.format = "R1C1";
-                        if (groups[5]) token.row = rowIndex + (token.rowInc = parseInt(groups[5], 10));
+                        if (groups[5]) token.row = rowIndex + (token.rowInc = toInt(groups[5]));
                         else
-                        if (groups[4]) token.row = parseInt(groups[4], 10);
+                        if (groups[4]) token.row = toInt(groups[4]);
 
-                        if (groups[9]) token.col = cellIndex + (token.colInc = parseInt(groups[9], 10));
+                        if (groups[9]) token.col = cellIndex + (token.colInc = toInt(groups[9]));
                         else
-                        if (groups[8]) token.col = parseInt(groups[8], 10);
+                        if (groups[8]) token.col = toInt(groups[8]);
                     }
                     else
                     if (groups[10]){
@@ -589,7 +589,7 @@ var FormulaParser;
                         token.fixedCol = (groups[12] ? true : false);
                         token.col = WorkSheet.getColumnIndex(groups[13]);
                         token.fixedRow = (groups[15] ? true : false);
-                        token.row = parseInt(groups[16], 10);
+                        token.row = toInt(groups[16]);
                     }
                     break;
                 default:

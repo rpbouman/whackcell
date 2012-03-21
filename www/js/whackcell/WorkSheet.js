@@ -382,10 +382,10 @@ var WorkSheet;
         ;
         for (r in d) {
             row = d[r];
-            tr = rows.item(parseInt(r, 10));
+            tr = rows.item(toInt(r));
             for (c in row) {
                 cell = row[c];
-                td = tr.cells.item(parseInt(c, 10));
+                td = tr.cells.item(toInt(c));
                 if (isStr(cell)) txt = cell;
                 else
                 if (isObj(cell)){
@@ -454,7 +454,7 @@ WorkSheet.getColumnIndex = function(address) {
         for (i = n; i >= 0; i--) col += (address.charCodeAt(i) - 64);
     }
     else
-    if (/\d+/) col = parseInt(address, 10);
+    if (/\d+/) col = toInt(address);
     return col;
 };
 

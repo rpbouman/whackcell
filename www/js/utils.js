@@ -48,32 +48,36 @@ function isUnd(val){
  *  @param val
  *  @return {boolean} true if val is a string, false otherwise
  */
-function isStr(val){
-    return typeof(val)==="string";
+function isStr(v){
+    return typeof(v)==="string";
 }
 
-function isObj(val){
-    return typeof(val)==="object" && (val!==null);
+function isObj(v){
+    return typeof(v)==="object" && (v!==null);
 }
 
-function isFunc(val){
-    return typeof(val)==="function";
+function isFunc(v){
+    return typeof(v)==="function";
 }
 
-function isArr(val){
-    return val.constructor===Array;
+function isArr(v){
+    return isObj(e) && v.constructor===Array;
 }
 
-function isNum(val){
-    return typeof(val)==="number";
+function isNum(v){
+    return typeof(v)==="number";
 }
 
-function isInt(val){
-    return isNum(val) && (val===parseInt(val, 10));
+function toInt(v){
+    return parseInt(v, 10);
 }
 
-function isEl(el) {
-    return isObj(el) && el.nodeType===1;
+function isInt(v){
+    return isNum(v) && (v===toInt(v));
+}
+
+function isEl(e) {
+    return isObj(e) && e.nodeType===1;
 }
 
 /**
@@ -388,7 +392,7 @@ function crEl(tag, atts, ch, p){
 
 function merge(dst, src, mode){
     var p,v;
-    if (!(mode = parseInt(mode, 10))) mode = merge.MERGE;
+    if (!(mode = toInt(mode))) mode = merge.MERGE;
     if (!isObj(dst)) dst = {};
     forPinO(src, function(p, o){
         if (((o===null) && (mode & merge.DELETE_IF_NULL)) || (mode & merge.DELETE)) delete dst[p];
