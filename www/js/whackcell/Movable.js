@@ -11,8 +11,8 @@ var Movable;
     init: function(){
         var config = this.config,
             worksheet = config.worksheet;
-        if (config.rows!==false) worksheet.moveRow = this.moveRow;
-        if (config.columns!==false) worksheet.moveColumn = this.moveColumn;
+        if (config.rows !== false) worksheet.moveRow = this.moveRow;
+        if (config.columns !== false) worksheet.moveColumn = this.moveColumn;
         if (config.ddsupport) {
             new MovableDDSupport(
                 merge(config.ddsupport, config)

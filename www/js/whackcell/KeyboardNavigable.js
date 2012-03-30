@@ -1,6 +1,6 @@
 define(function(require){
 
-require("js/utils.js");
+require("utils");
 
 var KeyboardNavigable;
 (KeyboardNavigable = function(config) {

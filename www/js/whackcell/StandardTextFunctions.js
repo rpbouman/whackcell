@@ -289,8 +289,7 @@ return {
             arguments: [
                 {
                     name: "text",
-                    description: "is the text whose length you want to find. Spaces count as characters.",
-                    type: "string"
+                    description: "is the text whose length you want to find. Spaces count as characters."
                 }
             ],
             function: function(text) {
@@ -304,8 +303,7 @@ return {
             arguments: [
                 {
                     name: "text",
-                    description: "is the text you want to convert to lowercase. LOWER does not change characters in text that are not letters.",
-                    type: "string"
+                    description: "is the text you want to convert to lowercase. LOWER does not change characters in text that are not letters."
                 }
             ],
             function: function(text) {
@@ -325,29 +323,25 @@ return {
                 {
                     name: "start_num",
                     description: "is the position of the first character you want to extract in text. The first character in text has start_num 1, and so on.",
-                    type: "number"
+                    type: "number",
+                    min: 1
                 },
                 {
                     name: "Num_chars",
                     description: "specifies the number of characters you want MID to return from text.",
-                    type: "number"
+                    type: "number",
+                    min: 0
                 }
             ],
             remarks: [
                 "If start_num is greater than the length of text, MID returns \"\" (empty text).",
-                "If start_num is less than the length of text, but start_num plus num_chars exceeds the length of text, MID returns the characters up to the end of text.",
+                "If start_num is less than the length of text, but start_num plus num_chars exceeds the length of text,"+
+                " MID returns the characters up to the end of text.",
                 "If start_num is less than 1, MID returns the #VALUE! error value.",
                 "If num_chars is negative, MID returns the #VALUE! error value.",
                 "If num_bytes is negative, MIDB returns the #VALUE! error value."
             ],
             function: function(text, start, num) {
-                if (start < 1) return {
-                    error: "start_num is less than 1"
-                }
-                else
-                if (num < 0) return {
-                    error: "num_chars is negative"
-                }
                 if (typeof(text)!=="string") text = String(text);
                 return text.substr(start - 1, num);
             }

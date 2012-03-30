@@ -1,19 +1,20 @@
 define(function(require){
 
-require("js/utils.js");
-var WorkSheet = require("js/whackcell/WorkSheet.js");
-var Range = require("js/whackcell/Range.js");
-var Movable = require("js/whackcell/Movable.js");
-var Resizable = require("js/whackcell/Resizable.js");
-var KeyboardNavigable = require("js/whackcell/KeyboardNavigable.js");
-var CellEditor = require("js/whackcell/CellEditor.js");
-var CellNavigator = require("js/whackcell/CellNavigator.js");
-var CellValues = require("js/whackcell/CellValues.js");
-var FormulaSupport = require("js/whackcell/FormulaSupport.js");
-var FunctionModuleManager = require("js/whackcell/FunctionModuleManager.js");
-var standardTextFunctions = require("js/whackcell/StandardTextFunctions.js");
-var standardDateTimeFunctions = require("js/whackcell/StandardDateTimeFunctions.js");
-var standardMathFunctions = require("js/whackcell/StandardMathFunctions.js");
+require("utils");
+var WorkSheet = require("WorkSheet");
+var Range = require("Range");
+var Movable = require("Movable");
+var Resizable = require("Resizable");
+var KeyboardNavigable = require("KeyboardNavigable");
+var CellEditor = require("CellEditor");
+var CellNavigator = require("CellNavigator");
+var CellValues = require("CellValues");
+var FormulaSupport = require("FormulaSupport");
+var FunctionModuleManager = require("FunctionModuleManager");
+var standardTextFunctions = require("standardTextFunctions");
+var standardDateTimeFunctions = require("standardDateTimeFunctions");
+var standardMathFunctions = require("standardMathFunctions");
+var experimentalFunctions = require("experimentalFunctions");
 
 var SpreadSheetApplication;
 
@@ -57,6 +58,7 @@ var SpreadSheetApplication;
                 }
             })
         ]);
+
         worksheet = new WorkSheet(merge({
             div: worksheet
         }, this.config));
@@ -65,11 +67,13 @@ var SpreadSheetApplication;
         new KeyboardNavigable({
             worksheet: worksheet
         });
+
         //allow columns and rows to be moved around
         new Movable({
             worksheet: worksheet,
             ddsupport: true
         });
+
         //allow columns and rows to be moved around
         new Resizable({
             worksheet: worksheet,
@@ -77,18 +81,21 @@ var SpreadSheetApplication;
         });
 
         //add a value helper
-        new CellValues({
-            worksheet: worksheet,
-            formulaSupport: new FormulaSupport({
-                moduleManager: new FunctionModuleManager({
-                    modules: [
-                      standardTextFunctions,
-                      standardDateTimeFunctions,
-                      standardMathFunctions
-                    ]
+        worksheet.setValueSupport(
+            new CellValues({
+                worksheet: worksheet,
+                formulaSupport: new FormulaSupport({
+                    moduleManager: new FunctionModuleManager({
+                        modules: [
+                            standardTextFunctions,
+                            standardDateTimeFunctions,
+                            standardMathFunctions,
+                            experimentalFunctions
+                        ]
+                    })
                 })
             })
-        });
+        );
 
         //add a celleditor
         worksheet.setCellEditor(
@@ -96,6 +103,7 @@ var SpreadSheetApplication;
                 textarea: cellEditor
             })
         );
+
         //add a widget to show the cell address
         new CellNavigator({
             worksheet: worksheet,
@@ -105,14 +113,7 @@ var SpreadSheetApplication;
         var data = {
             1: {
                 1: "bla",
-                4: {
-                    text: "boe",
-                    atts: {
-                        style: {
-                            "background-color": "green"
-                        }
-                    }
-                }
+                4: "boe"
             },
             2: {
                 3: "=A1 & A4"
@@ -120,8 +121,6 @@ var SpreadSheetApplication;
         };
         worksheet.setData(data);
         var d = worksheet.getData();
-        console.log(JSON.stringify(data));
-        console.log(JSON.stringify(d));
     }
 };
 

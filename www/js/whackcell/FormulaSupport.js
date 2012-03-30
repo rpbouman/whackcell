@@ -1,9 +1,9 @@
 define(function(require) {
 
-require("js/utils.js");
+require("utils");
 
-var WorkSheet = require("js/whackcell/WorkSheet.js")
-var CellValues = require("js/whackcell/CellValues.js");
+var WorkSheet = require("WorkSheet");
+var CellValues = require("CellValues");
 
 var FormulaSupport;
 (FormulaSupport = function(config) {
@@ -21,7 +21,7 @@ var FormulaSupport;
         //value = compiled formula (function)
     };
     this.parser = new FormulaParser();
-    this.runtime = config.moduleManager ? config.moduleManager.getRuntime() : null;
+    this.runtime = config.moduleManager ? config.moduleManager.getRuntime() : {};
 }).prototype = {
     init: function() {
     },
@@ -107,7 +107,7 @@ var FormulaSupport;
     /**
      *  Update the cells that are dependent on the specified cell.
      **/
-    updateDependencies: function(cell){
+    updateDependencies: function(worksheet, cell){
         var dependencies = this.sortDependencies(cell),
             i, n = dependencies.length, dependency, value
         ;
@@ -115,13 +115,13 @@ var FormulaSupport;
             dependency = dependencies[i];
             try {
                 value = this.calculate(dependency);
-                this.worksheet.setCellValue(
+                worksheet.setCellValue(
                     dependency,
                     value,
                     this.valueHelper
                 );
             } catch (exception) {
-                this.worksheet.setCellError(
+                worksheet.setCellError(
                   dependency,
                   exception
                 );

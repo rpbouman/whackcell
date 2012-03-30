@@ -1,7 +1,7 @@
 define(function(require) {
 
-require("js/utils.js");
-var WorkSheet = require("js/whackcell/WorkSheet.js");
+require("utils");
+var WorkSheet = require("WorkSheet");
 
 var CellEditor;
 (CellEditor = function(config) {

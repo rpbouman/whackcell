@@ -1,8 +1,7 @@
 define(function(require){
 
-require("js/utils.js");
-
-var CascadingStyleSheet = require("js/CascadingStyleSheet.js");
+require("utils");
+var CascadingStyleSheet = require("CascadingStyleSheet");
 
 var WorkSheet;
 
@@ -370,6 +369,9 @@ var WorkSheet;
     },
     setCellEditor: function(cellEditor) {
         cellEditor.initWorkSheet(this);
+    },
+    setValueSupport: function(cellValues) {
+        cellValues.initWorkSheet(this);
     },
     setCellNavigator: function() {
     },

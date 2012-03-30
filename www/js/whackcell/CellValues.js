@@ -1,6 +1,6 @@
 define(function(require){
 
-require("js/utils.js");
+require("utils");
 
 var CellValues;
 (CellValues = function(config) {
@@ -19,14 +19,8 @@ var CellValues;
         if (formulaSupport) {
             formulaHelper = formulaSupport.createCellValueHelper();
             patterns[formulaHelper.name] = formulaHelper;
-            formulaSupport.worksheet = worksheet;
             formulaSupport.init();
         }
-        worksheet.valueHelper = this;
-        worksheet.setCellContent = this.setCellContent;
-        worksheet.getCellContent = this.getCellContent;
-        worksheet.setCellValue = this.setCellValue;
-        worksheet.getCellValue = this.getCellValue;
         pattern = "";
         this.patterns = merge(patterns, config.patterns || CellValues.patterns);
         forPinO(this.patterns, function(p, o){
@@ -40,6 +34,13 @@ var CellValues;
             pattern += "(" + source + ")";
         });
         this.regexp = new RegExp("^" + pattern + "$", "i");
+    },
+    initWorkSheet: function(worksheet) {
+        worksheet.valueHelper = this;
+        worksheet.setCellContent = this.setCellContent;
+        worksheet.getCellContent = this.getCellContent;
+        worksheet.setCellValue = this.setCellValue;
+        worksheet.getCellValue = this.getCellValue;
     },
     setCellContent: function(cell, content) {
         var valueHelper = this.valueHelper,
@@ -57,7 +58,7 @@ var CellValues;
         sAtt(cell, "data-content", content);
         if (obj.error) this.setCellError(cell, obj.error);
         else this.setCellValue(cell, value, type);
-        if (formulaSupport) formulaSupport.updateDependencies(cell);
+        if (formulaSupport) formulaSupport.updateDependencies(this, cell);
     },
     setCellValue: function(cell, value, type) {
         var className = cell.className,

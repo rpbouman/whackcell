@@ -22,7 +22,8 @@ var FunctionModuleManager;
     registerModuleFunction: function(moduleFunction) {
         var functionName = moduleFunction.name.toUpperCase(),
             func = moduleFunction.function,
-            assertion
+            assertion,
+            runtime = this.runtime
         ;
         moduleFunction.name = functionName;
         this.functions[functionName] = moduleFunction;
@@ -33,10 +34,16 @@ var FunctionModuleManager;
                 message: functionName + " is not implemented!"
             };
         };
-        this.runtime[functionName] = assertion ? function() {
-            var args = assertion.apply(this, arguments);
-            return func.apply(this, args);
-        } : func;
+        if (isUnd(runtime[functionName])) {
+          runtime[functionName] = assertion ? function() {
+              var args = assertion.apply(this, arguments);
+              return func.apply(this, args);
+          } : func;
+        }
+        else throw {
+          name: functionName,
+          message: "Function " + functionName + " conflicts with an earlier defined member of this runtime."
+        };
     },
     createModuleFunctionAssertion: function(moduleFunction) {
         var args = moduleFunction.arguments,
